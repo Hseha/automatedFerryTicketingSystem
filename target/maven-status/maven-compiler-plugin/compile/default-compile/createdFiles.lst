@@ -1,6 +1,7 @@
 com/mycompany/automatedferryticketingsystem/controller/VesselController$1.class
 com/mycompany/automatedferryticketingsystem/view/IdentifyFerryUI$1.class
 com/mycompany/automatedferryticketingsystem/view/WelcomeScreen.class
+com/mycompany/automatedferryticketingsystem/view/IdentifyFerryUI$2.class
 com/mycompany/automatedferryticketingsystem/model/Ticket.class
 com/mycompany/automatedferryticketingsystem/controller/VesselController.class
 com/mycompany/automatedferryticketingsystem/model/Vessel.class
