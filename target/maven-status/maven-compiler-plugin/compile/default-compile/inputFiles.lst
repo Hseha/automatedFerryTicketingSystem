@@ -1,0 +1,8 @@
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/controller/VesselController.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/dao/DBConnection.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/dao/VesselDAO.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/model/Ticket.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/model/Vessel.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/view/IdentifyFerryUI.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/view/PassengerInfoUI.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/view/WelcomeScreen.java
