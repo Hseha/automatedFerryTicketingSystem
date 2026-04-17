@@ -39,7 +39,7 @@ public class VesselController {
                     // Refresh table with real data from DB
                     List<Vessel> vessels = get(); 
                     updateTable(vessels);
-                    
+
                     view.getLblStatus().setText("● System Status: Online");
                     view.getLblStatus().setForeground(new Color(0, 204, 102));
                 } catch (Exception e) {

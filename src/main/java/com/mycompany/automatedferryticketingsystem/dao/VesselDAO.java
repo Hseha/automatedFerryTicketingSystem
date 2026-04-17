@@ -19,7 +19,7 @@ public class VesselDAO {
      */
     public List<Vessel> searchVessels(String searchTerm) {
         List<Vessel> vessels = new ArrayList<>();
-        
+
         // Ang paggamit og '?' (placeholder) kay usa ka security best practice. 
         // Kini ang mopugong sa "SQL Injection" kay ang driver na ang mo-sanitize 
         // sa input aron dili kini mahimong parte sa SQL command.
