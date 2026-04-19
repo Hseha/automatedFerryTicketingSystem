@@ -1,70 +1,97 @@
 package com.mycompany.automatedferryticketingsystem.model;
 
 public class Ticket {
-    // 1. Basic Trip Info: Data gikan sa unang screen (IdentifyFerryUI)
+    // 1. Trip Info (Matches IdentifyFerryUI table columns)
     private int tripId;
     private String route;
     private String vesselName;
+    private String vesselType;    
+    private String departureTime; 
+    private String eta;           
     private double baseFare;
     
-    // 2. Passenger Info: Data gikan sa ikaduhang screen (PassengerInfoUI)
+    // 2. Passenger Info (Matches PassengerInfoUI form)
     private String transactionId;
     private String passengerName;
     private int age;
-    private String category; // Regular, Student, or Senior
+    private String contactNumber; 
+    private String address;       
+    private String category; 
     private String idNumber; 
     
-    // 3. Payment & Logistics: Data nga i-calculate sa system
+    // 3. System Calculations
     private double finalFare;
     private String seatNumber;
-    private String paymentStatus = "Pending"; // Default status sa database
+    private String paymentStatus = "Pending";
 
-    // Constructor: I-initialize ang basic info sa barko pag-create sa object
-    public Ticket(int tripId, String route, String vesselName, double baseFare) {
+    // UPDATED CONSTRUCTOR
+    public Ticket(int tripId, String vesselName, String route, String vesselType, String departureTime, String eta, double baseFare) {
         this.tripId = tripId;
-        this.route = route;
         this.vesselName = vesselName;
+        this.route = route;
+        this.vesselType = vesselType;
+        this.departureTime = departureTime;
+        this.eta = eta;
         this.baseFare = baseFare;
     }
 
-    // Business Logic: Mao ni ang tig-calculate sa 20% discount
+    // Business Logic for Discounts
     public void applyDiscount() {
-        if (category != null && (category.equalsIgnoreCase("Student") || category.equalsIgnoreCase("Senior Citizen"))) {
-            this.finalFare = this.baseFare * 0.80; // Minus 20% kung naay ID
+        if (category != null && !category.equalsIgnoreCase("Regular")) {
+            this.finalFare = this.baseFare * 0.80; 
         } else {
-            this.finalFare = this.baseFare; // Fix price kung regular
+            this.finalFare = this.baseFare;
         }
     }
 
-    // --- GETTERS AND SETTERS ---
-    // Gigamit ni para makakuha (get) o makabutang (set) og data ang Controller ug DAO
+    // --- HELPER FOR UI DISPLAY ---
+    /**
+     * Fixes "cannot find symbol" in PassengerInfoUI.
+     * Combines vessel details for a polished Trip Catalogue view.
+     */
+    public String getTravelTime() { 
+        String type = (vesselType != null) ? vesselType : "Standard";
+        String arrival = (eta != null) ? eta : "TBA";
+        return type + " (ETA: " + arrival + ")"; 
+    }
 
+    // --- GETTERS ---
     public int getTripId() { return tripId; }
     public String getRoute() { return route; }
     public String getVesselName() { return vesselName; }
+    public String getVesselType() { return vesselType; }
+    public String getDepartureTime() { return departureTime; }
+    public String getEta() { return eta; }
     public double getBaseFare() { return baseFare; }
 
-    public String getTransactionId() { return transactionId; }
-    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
-
+    // --- SETTERS & REMAINING GETTERS ---
     public String getPassengerName() { return passengerName; }
-    public void setPassengerName(String passengerName) { this.passengerName = passengerName; }
-
+    public void setPassengerName(String name) { this.passengerName = name; }
+    
     public int getAge() { return age; }
     public void setAge(int age) { this.age = age; }
+    
+    public String getContactNumber() { return contactNumber; }
+    public void setContactNumber(String contact) { this.contactNumber = contact; }
+    
+    public String getAddress() { return address; }
+    public void setAddress(String addr) { this.address = addr; }
 
+    public void setCategory(String category) { 
+        this.category = category; 
+        applyDiscount(); // Automatically update fare when category is set
+    }
     public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
+
+    public void setFinalFare(double fare) { this.finalFare = fare; }
+    public double getFinalFare() { return finalFare; }
+
+    public String getTransactionId() { return transactionId; }
+    public void setTransactionId(String id) { this.transactionId = id; }
+    
+    public String getSeatNumber() { return seatNumber; }
+    public void setSeatNumber(String seat) { this.seatNumber = seat; }
 
     public String getIdNumber() { return idNumber; }
     public void setIdNumber(String idNumber) { this.idNumber = idNumber; }
-
-    public double getFinalFare() { return finalFare; }
-    public void setFinalFare(double finalFare) { this.finalFare = finalFare; }
-
-    public String getSeatNumber() { return seatNumber; }
-    public void setSeatNumber(String seatNumber) { this.seatNumber = seatNumber; }
-
-    public String getPaymentStatus() { return paymentStatus; }
-    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
 }
