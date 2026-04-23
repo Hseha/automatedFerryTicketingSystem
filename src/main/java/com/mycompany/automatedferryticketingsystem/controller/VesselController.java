@@ -5,6 +5,7 @@ import com.mycompany.automatedferryticketingsystem.model.Vessel;
 import com.mycompany.automatedferryticketingsystem.model.Ticket;
 import com.mycompany.automatedferryticketingsystem.view.IdentifyFerryUI;
 import com.mycompany.automatedferryticketingsystem.view.PassengerInfoUI;
+import com.zaxxer.hikari.HikariDataSource; // 1. Added Import
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.util.List;
@@ -14,10 +15,13 @@ import java.awt.event.ActionEvent;
 public class VesselController {
     private VesselDAO dao;
     private IdentifyFerryUI view;
+    private HikariDataSource dataSource; // 2. Added Field
 
-    public VesselController(IdentifyFerryUI view, VesselDAO dao) {
+    // 3. Updated Constructor to accept dataSource
+    public VesselController(IdentifyFerryUI view, VesselDAO dao, HikariDataSource dataSource) {
         this.view = view;
         this.dao = dao;
+        this.dataSource = dataSource; 
         initController(); 
     }
 
@@ -35,37 +39,36 @@ public class VesselController {
             return;
         }
 
-        // 1. EXTRACT DATA: Correct mapping based on updateTable()
-        String vesselName = view.getTableModel().getValueAt(selectedRow, 0).toString();
-        String route = view.getTableModel().getValueAt(selectedRow, 1).toString();
-        String vesselType = view.getTableModel().getValueAt(selectedRow, 2).toString();
-        String status = view.getTableModel().getValueAt(selectedRow, 3).toString();
-        String departureTime = view.getTableModel().getValueAt(selectedRow, 4).toString();
-        String remaining = view.getTableModel().getValueAt(selectedRow, 6).toString();
+        int tripId = Integer.parseInt(view.getTableModel().getValueAt(selectedRow, 0).toString());
+        String vesselName = view.getTableModel().getValueAt(selectedRow, 1).toString();
+        String route = view.getTableModel().getValueAt(selectedRow, 2).toString();
+        String vesselType = view.getTableModel().getValueAt(selectedRow, 3).toString();
+        String status = view.getTableModel().getValueAt(selectedRow, 4).toString();
+        String departureTime = view.getTableModel().getValueAt(selectedRow, 5).toString();
+        String remaining = view.getTableModel().getValueAt(selectedRow, 7).toString();
 
-        // Operational Checks
         if (status.equalsIgnoreCase("Maintenance") || status.equalsIgnoreCase("Critical Repair")) {
             JOptionPane.showMessageDialog(view, "VESSEL UNAVAILABLE", "Operational Alert", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        if (remaining.equals("FULL")) {
+        if (remaining.equals("FULL")) { 
             JOptionPane.showMessageDialog(view, "VOYAGE FULL", "Booking Limit Reached", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
-        // 2. PREPARE TICKET: Providing exactly 7 arguments for your new constructor
-        int tempId = 0;
         double baseFare = 250.00; 
         String eta = "2 Hours Voyage";
 
-        Ticket ticket = new Ticket(tempId, vesselName, route, vesselType, departureTime, eta, baseFare);
+        Ticket ticket = new Ticket(tripId, vesselName, route, vesselType, departureTime, eta, baseFare);
 
-        // 3. NAVIGATION
-        new PassengerInfoUI(ticket).setVisible(true);
+        // --- 4. NAVIGATION FIX (Line 67) ---
+        // We now pass the dataSource baton to the PassengerInfoUI
+        new PassengerInfoUI(this.dataSource, ticket).setVisible(true);
         view.dispose();
     }
 
+    // ... [loadVesselData and updateTable remain the same] ...
     public void loadVesselData(String searchTerm) {
         view.getBtnProceed().setText("FETCHING...");
         view.getBtnProceed().setEnabled(false);
@@ -104,6 +107,7 @@ public class VesselController {
             String remainingDisplay = (remaining <= 0) ? "FULL" : String.valueOf(remaining);
 
             model.addRow(new Object[]{
+                v.getTripId(), 
                 v.getVesselName(), v.getRoute(), v.getVesselType(), v.getStatus(),
                 v.getDepartureTime(), v.getCapacity(), remainingDisplay, v.getTripStatus()
             });

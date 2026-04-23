@@ -1,14 +1,23 @@
 package com.mycompany.automatedferryticketingsystem.dao;
 
 import com.mycompany.automatedferryticketingsystem.model.Vessel;
+import com.zaxxer.hikari.HikariDataSource; // Added Hikari Import
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class VesselDAO {
     
+    // 1. Add a private field for the DataSource
+    private final HikariDataSource dataSource;
+
+    // 2. Updated Constructor to accept the shared connection pool
+    public VesselDAO(HikariDataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+    
     private static final String SQL = 
-        "SELECT v.vessel_id, v.vessel_name, t.route, v.vessel_type, v.status, " +
+        "SELECT t.trip_id, v.vessel_id, v.vessel_name, t.route, v.vessel_type, v.status, " +
         "t.departure_time, v.capacity, " +
         "(v.capacity - COALESCE(b.booked_seats, 0)) as remaining_seats, " +
         "CASE WHEN t.departure_time < NOW() THEN 'Past' ELSE 'Upcoming' END as trip_status " +
@@ -21,7 +30,9 @@ public class VesselDAO {
 
     public List<Vessel> getAvailableVessels(String query) {
         List<Vessel> vessels = new ArrayList<>();
-        try (Connection conn = DBConnection.getConnection();
+        
+        // 3. FIX: Use the dataSource to get the connection
+        try (Connection conn = dataSource.getConnection(); 
              PreparedStatement ps = conn.prepareStatement(SQL)) {
              
             String pattern = (query == null || query.trim().isEmpty()) ? "%" : "%" + query.trim() + "%";
@@ -32,6 +43,7 @@ public class VesselDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Vessel v = new Vessel();
+                    v.setTripId(rs.getInt("trip_id")); 
                     v.setVesselId(rs.getInt("vessel_id"));
                     v.setVesselName(rs.getString("vessel_name"));
                     v.setRoute(rs.getString("route"));

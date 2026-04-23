@@ -1,10 +1,9 @@
 package com.mycompany.automatedferryticketingsystem.view;
 
 import com.mycompany.automatedferryticketingsystem.model.Ticket;
+import com.zaxxer.hikari.HikariDataSource;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -13,21 +12,23 @@ import java.awt.event.MouseEvent;
 
 public class DiscountPaymentUI extends JFrame {
     private Ticket ticket;
+    private HikariDataSource dataSource;
     private JComboBox<String> cbPassengerType;
     private JTextField txtIDNumber;
     private JLabel lblBaseFare, lblDiscount, lblTotal, lblErrorMsg;
-    private JButton btnGcash, btnCash, btnComplete;
+    private JButton btnGcash, btnCash, btnComplete, btnValidateID;
     private String selectedMethod = "";
 
     private final String SYSTEM_TITLE = "AUTOMATED FERRY TICKETING SYSTEM";
-    
     private final Color ACCENT_BLUE = new Color(0, 120, 215);
     private final Color HOVER_BLUE = new Color(50, 150, 255);
     private final Color DARK_BG = new Color(38, 40, 45);
     private final Color ERROR_RED = new Color(255, 80, 80);
 
-    public DiscountPaymentUI(Ticket ticket) {
+    public DiscountPaymentUI(HikariDataSource dataSource, Ticket ticket) {
+        this.dataSource = dataSource;
         this.ticket = ticket;
+        
         setTitle(SYSTEM_TITLE); 
         setMinimumSize(new Dimension(850, 750));
         setSize(1000, 800);
@@ -70,6 +71,7 @@ public class DiscountPaymentUI extends JFrame {
         footerPanel.add(btnComplete, BorderLayout.CENTER);
         add(footerPanel, BorderLayout.SOUTH);
 
+        setupFinalActions();
         updateCalculations();
     }
 
@@ -93,17 +95,14 @@ public class DiscountPaymentUI extends JFrame {
         
         lblErrorMsg = new JLabel(" "); 
         lblErrorMsg.setForeground(ERROR_RED);
-        lblErrorMsg.setFont(new Font("SansSerif", Font.ITALIC, 12));
 
         txtIDNumber.addFocusListener(new FocusAdapter() {
-            @Override
             public void focusGained(FocusEvent e) {
                 if (txtIDNumber.getText().equals("Enter ID number")) {
                     txtIDNumber.setText("");
                     txtIDNumber.setForeground(Color.BLACK);
                 }
             }
-            @Override
             public void focusLost(FocusEvent e) {
                 if (txtIDNumber.getText().isEmpty()) {
                     txtIDNumber.setForeground(Color.GRAY);
@@ -113,42 +112,165 @@ public class DiscountPaymentUI extends JFrame {
             }
         });
 
-        txtIDNumber.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { checkPurchaseEligibility(); }
-            public void removeUpdate(DocumentEvent e) { checkPurchaseEligibility(); }
-            public void changedUpdate(DocumentEvent e) { checkPurchaseEligibility(); }
-        });
-
-        JButton btnValidateID = new JButton("VALIDATE ID");
+        btnValidateID = new JButton("VALIDATE ID");
         styleActionBtn(btnValidateID);
 
-        gbc.gridy = 0; p.add(new JLabel("Passenger Type") {{ setForeground(Color.LIGHT_GRAY); }}, gbc);
+        // Standardized Label creation to avoid "Missing Return" errors
+        gbc.gridy = 0; 
+        JLabel lblType = new JLabel("Passenger Type");
+        lblType.setForeground(Color.LIGHT_GRAY);
+        p.add(lblType, gbc);
+
         gbc.gridy = 1; p.add(cbPassengerType, gbc);
-        gbc.gridy = 2; p.add(new JLabel("ID Number") {{ setForeground(Color.LIGHT_GRAY); }}, gbc);
+
+        gbc.gridy = 2; 
+        JLabel lblId = new JLabel("ID Number");
+        lblId.setForeground(Color.LIGHT_GRAY);
+        p.add(lblId, gbc);
         
         JPanel idGroup = new JPanel(new BorderLayout(10, 0));
         idGroup.setOpaque(false);
         idGroup.add(txtIDNumber, BorderLayout.CENTER);
         idGroup.add(btnValidateID, BorderLayout.EAST);
         gbc.gridy = 3; p.add(idGroup, gbc);
-        
         gbc.gridy = 4; p.add(lblErrorMsg, gbc);
 
         return p;
     }
 
-    private void checkPurchaseEligibility() {
-        String idText = txtIDNumber.getText().trim();
-        boolean isIdEntered = !idText.isEmpty() && !idText.equals("Enter ID number");
-        boolean isMethodSelected = !selectedMethod.isEmpty();
+    private void setupFinalActions() {
+        btnValidateID.addActionListener(e -> {
+            String id = txtIDNumber.getText().trim();
+            if (!id.isEmpty() && !id.equals("Enter ID number")) {
+                ticket.setIdNumber(id);
+                JOptionPane.showMessageDialog(this, "ID Validated Successfully.");
+                checkPurchaseEligibility();
+            } else {
+                JOptionPane.showMessageDialog(this, "Please enter a valid ID number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            }
+        });
 
-        if (!isIdEntered && isMethodSelected) {
-            lblErrorMsg.setText("Warning: ID Number is required for selected category.");
+        btnComplete.addActionListener(e -> {
+            String txID = "F-TXN-" + (System.currentTimeMillis() % 1000000);
+            ticket.setTransactionId(txID);
+            
+            if(!txtIDNumber.getText().equals("Enter ID number")) {
+                ticket.setIdNumber(txtIDNumber.getText().trim());
+            }
+
+            new FinalTicketUI(this.dataSource, ticket).setVisible(true);
+            this.dispose();
+        });
+    }
+
+    private void updateCalculations() {
+        String type = (String) cbPassengerType.getSelectedItem();
+        boolean isRegular = type.equals("Regular");
+        
+        txtIDNumber.setEnabled(!isRegular);
+        btnValidateID.setEnabled(!isRegular);
+        
+        resetPaymentSelection();
+
+        double discount = isRegular ? 0 : ticket.getBaseFare() * 0.20;
+        double finalTotal = ticket.getBaseFare() - discount;
+
+        lblDiscount.setText("₱" + String.format("%.2f", discount));
+        lblTotal.setText("₱" + String.format("%.2f", finalTotal));
+        
+        ticket.setCategory(type);
+        ticket.setFinalFare(finalTotal);
+        
+        checkPurchaseEligibility();
+    }
+
+    private void selectPayment(String method, JButton btn) {
+        selectedMethod = method;
+        btnGcash.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        btnCash.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        btn.setBorder(BorderFactory.createLineBorder(ACCENT_BLUE, 3));
+
+        if (method.equals("Cash")) handleCashPayment();
+        else if (method.equals("GCash")) handleGCashPayment();
+    }
+
+    private void handleCashPayment() {
+        double total = ticket.getFinalFare();
+        String input = JOptionPane.showInputDialog(this, 
+            "Total Amount: ₱" + String.format("%.2f", total) + "\n\nEnter Amount Received:", 
+            "Cash Payment", JOptionPane.QUESTION_MESSAGE);
+
+        if (input != null && !input.isEmpty()) {
+            try {
+                double received = Double.parseDouble(input);
+                if (received >= total) {
+                    double change = received - total;
+                    JOptionPane.showMessageDialog(this, 
+                        "Payment Received: ₱" + String.format("%.2f", received) + 
+                        "\nChange: ₱" + String.format("%.2f", change), 
+                        "Payment Successful", JOptionPane.INFORMATION_MESSAGE);
+                    
+                    ticket.setPaymentMethod("Cash");
+                    checkPurchaseEligibility();
+                } else {
+                    showPaymentError("Insufficient Amount!");
+                }
+            } catch (NumberFormatException e) {
+                showPaymentError("Invalid numeric input.");
+            }
+        } else {
+            resetPaymentSelection();
+        }
+    }
+
+    private void handleGCashPayment() {
+        double total = ticket.getFinalFare();
+        JPanel panel = new JPanel(new GridLayout(3, 1, 5, 5));
+        panel.add(new JLabel("Amount to Pay: ₱" + String.format("%.2f", total)));
+        panel.add(new JLabel("Enter 13-digit GCash Ref No:"));
+        JTextField refField = new JTextField();
+        panel.add(refField);
+
+        int result = JOptionPane.showConfirmDialog(this, panel, 
+                "GCash Payment Verification", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        if (result == JOptionPane.OK_OPTION) {
+            String refNo = refField.getText().trim();
+            if (refNo.matches("\\d{13}")) {
+                JOptionPane.showMessageDialog(this, "Reference Number Verified!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                ticket.setPaymentMethod("GCash (Ref: " + refNo + ")");
+                checkPurchaseEligibility();
+            } else {
+                showPaymentError("Invalid Reference Number! (Must be 13 digits)");
+            }
+        } else {
+            resetPaymentSelection();
+        }
+    }
+
+    private void checkPurchaseEligibility() {
+        String type = (String) cbPassengerType.getSelectedItem();
+        String idText = txtIDNumber.getText().trim();
+        
+        boolean isRegular = type.equals("Regular");
+        boolean hasId = !idText.isEmpty() && !idText.equals("Enter ID number");
+        boolean idRequirementMet = isRegular || hasId;
+
+        btnGcash.setEnabled(idRequirementMet);
+        btnCash.setEnabled(idRequirementMet);
+        
+        if (!idRequirementMet) {
+            lblErrorMsg.setText("* ID Number required for " + type + " discount.");
+            btnGcash.setBackground(new Color(200, 200, 200));
+            btnCash.setBackground(new Color(200, 200, 200));
         } else {
             lblErrorMsg.setText(" ");
+            btnGcash.setBackground(Color.WHITE);
+            btnCash.setBackground(Color.WHITE);
         }
 
-        if (isIdEntered && isMethodSelected) {
+        boolean isMethodSelected = !selectedMethod.isEmpty();
+        if (idRequirementMet && isMethodSelected) {
             btnComplete.setEnabled(true);
             btnComplete.setBackground(ACCENT_BLUE);
             btnComplete.setForeground(Color.WHITE);
@@ -188,22 +310,15 @@ public class DiscountPaymentUI extends JFrame {
         return p;
     }
 
-    private void updateCalculations() {
-        String type = (String) cbPassengerType.getSelectedItem();
-        double discount = type.equals("Regular") ? 0 : ticket.getBaseFare() * 0.20;
-        double finalTotal = ticket.getBaseFare() - discount;
-        lblDiscount.setText("₱" + String.format("%.2f", discount));
-        lblTotal.setText("₱" + String.format("%.2f", finalTotal));
-        ticket.setCategory(type);
-        ticket.setFinalFare(finalTotal);
-        checkPurchaseEligibility();
+    private void showPaymentError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Payment Error", JOptionPane.ERROR_MESSAGE);
+        resetPaymentSelection();
     }
 
-    private void selectPayment(String method, JButton btn) {
-        selectedMethod = method;
+    private void resetPaymentSelection() {
+        selectedMethod = "";
         btnGcash.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         btnCash.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        btn.setBorder(BorderFactory.createLineBorder(ACCENT_BLUE, 3));
         checkPurchaseEligibility();
     }
 
@@ -223,10 +338,6 @@ public class DiscountPaymentUI extends JFrame {
         btn.setBackground(Color.WHITE);
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { if(!selectedMethod.equals(btn.getText())) btn.setBackground(new Color(240, 248, 255)); }
-            public void mouseExited(MouseEvent e) { if(!selectedMethod.equals(btn.getText())) btn.setBackground(Color.WHITE); }
-        });
     }
 
     private void styleActionBtn(JButton btn) {

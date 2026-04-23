@@ -1,4 +1,4 @@
-package com.mycompany.automatedferryticketingsystem.dao;
+package com.mycompany.automatedferryticketingsystem.util;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;

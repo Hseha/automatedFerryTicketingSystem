@@ -1,16 +1,21 @@
 package com.mycompany.automatedferryticketingsystem.view;
 
 import com.mycompany.automatedferryticketingsystem.model.Ticket;
+import com.zaxxer.hikari.HikariDataSource; // Added Import
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 public class PassengerInfoUI extends JFrame {
     private Ticket ticket;
+    private HikariDataSource dataSource; // Added Field
     
- 
     private final Color ACCENT_BLUE = new Color(0, 120, 215);
     private final Color HOVER_BLUE = new Color(50, 150, 255);
     private final Color DARK_BG = new Color(28, 30, 35);
@@ -24,8 +29,11 @@ public class PassengerInfoUI extends JFrame {
     private JButton btnBack, btnValidate;
     private JLabel lblStatus;
 
-    public PassengerInfoUI(Ticket ticket) {
+    // Updated Constructor to accept the DataSource
+    public PassengerInfoUI(HikariDataSource dataSource, Ticket ticket) {
+        this.dataSource = dataSource; // Store the connection pool
         this.ticket = ticket;
+        
         setTitle(SYSTEM_TITLE);
         setMinimumSize(new Dimension(1000, 850));
         setSize(1000, 850);
@@ -41,7 +49,7 @@ public class PassengerInfoUI extends JFrame {
         lblHeader.setBorder(BorderFactory.createEmptyBorder(30, 0, 30, 0));
         add(lblHeader, BorderLayout.NORTH);
 
-        // --- CENTER PANEL (Split Layout) ---
+        // --- CENTER PANEL ---
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
@@ -49,98 +57,47 @@ public class PassengerInfoUI extends JFrame {
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weighty = 1.0;
 
-        // Left Side: Inputs
+        // Left: Inputs
         gbc.gridx = 0; gbc.weightx = 0.5;
         centerPanel.add(createPassengerPanel(), gbc);
 
-        // Right Side: Summary Card
+        // Right: Summary
         gbc.gridx = 1; gbc.weightx = 0.5;
         centerPanel.add(createTripSummaryPanel(), gbc);
 
         add(centerPanel, BorderLayout.CENTER);
-
-        // --- FOOTER WITH DYNAMIC STATUS ---
         add(createModernFooter(), BorderLayout.SOUTH);
 
         setupActions();
     }
 
-    private JPanel createModernFooter() {
-        JPanel p = new JPanel(new GridBagLayout());
-        p.setOpaque(false);
-        p.setBorder(BorderFactory.createEmptyBorder(20, 50, 40, 50));
-
-        btnBack = new JButton("BACK");
-        btnValidate = new JButton("VALIDATE INFORMATION");
-        
-        lblStatus = new JLabel();
-        updateSystemStatus(); // Dynamic Health Check
-
-        styleButton(btnBack, new Color(60, 63, 65));
-        styleButton(btnValidate, ACCENT_BLUE);
-
-        GridBagConstraints g = new GridBagConstraints();
-        g.weightx = 1.0;
-        g.fill = GridBagConstraints.HORIZONTAL;
-
-        // Back Button
-        g.gridx = 0; p.add(btnBack, g);
-        
-        // Middle Status (Online)
-        g.weightx = 0; 
-        g.gridx = 1; 
-        g.insets = new Insets(0, 40, 0, 40);
-        p.add(lblStatus, g);
-        
-        // Validate Button
-        g.weightx = 1.0;
-        g.gridx = 2; 
-        g.insets = new Insets(0, 0, 0, 0);
-        p.add(btnValidate, g);
-
-        return p;
-    }
-
-    private void updateSystemStatus() {
-        // Checks if data is present to determine if system is "Online"
-        if (ticket != null && ticket.getRoute() != null) {
-            lblStatus.setText("SYSTEM STATUS: ONLINE");
-            lblStatus.setForeground(STATUS_GREEN);
-        } else {
-            lblStatus.setText("SYSTEM STATUS: OFFLINE");
-            lblStatus.setForeground(WARNING_RED);
-        }
-        lblStatus.setFont(new Font("Monospaced", Font.BOLD, 13));
-    }
-
     private void setupActions() {
-        // --- VALIDATE BUTTON: Moves to Discount & Payment ---
         btnValidate.addActionListener(e -> {
             String name = txtFullName.getText().trim();
             String contact = txtContact.getText().trim();
 
             if (name.isEmpty() || contact.isEmpty()) {
-                // Pop-up Error if name is missing
-                JOptionPane.showMessageDialog(this, 
-                    "ERROR: Please enter personal info first!", 
-                    "System Validation", 
-                    JOptionPane.ERROR_MESSAGE);
-            } else {
-                // Save data and transition
+                showError("ERROR: All fields are required!");
+            } 
+            else if (!contact.matches("^09\\d{9}$")) {
+                showError("INVALID CONTACT: Must start with '09' and be 11 digits.");
+            } 
+            else {
                 ticket.setPassengerName(name);
-                
-                // Switch to DiscountPaymentUI
-                new DiscountPaymentUI(ticket).setVisible(true);
+                // Transition to next screen - Passing the dataSource baton
+                new DiscountPaymentUI(this.dataSource, ticket).setVisible(true);
                 this.dispose(); 
             }
         });
 
-        // --- BACK BUTTON: Returns to Identify Ferry (Trip Selection) ---
         btnBack.addActionListener(e -> {
-            new IdentifyFerryUI().setVisible(true); 
+            // FIX: Pass the dataSource back to the selection screen
+            new IdentifyFerryUI(this.dataSource).setVisible(true); 
             this.dispose(); 
         });
     }
+
+    // ... [Remainder of your UI methods (createPassengerPanel, styleInput, etc.) remain the same] ...
 
     private JPanel createPassengerPanel() {
         JPanel p = new JPanel(new GridBagLayout());
@@ -162,6 +119,8 @@ public class PassengerInfoUI extends JFrame {
         styleInput(txtFullName);
         styleInput(txtContact);
         
+        applyContactNumberFilter(txtContact);
+        
         g.gridy = 0; p.add(createLabel("FULL NAME"), g);
         g.gridy = 1; p.add(txtFullName, g);
         g.gridy = 2; p.add(createLabel("AGE"), g);
@@ -170,6 +129,25 @@ public class PassengerInfoUI extends JFrame {
         g.gridy = 5; p.add(txtContact, g);
 
         return p;
+    }
+
+    private void applyContactNumberFilter(JTextField textField) {
+        ((AbstractDocument) textField.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) 
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String nextText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+                
+                if (nextText.matches("\\d*") && nextText.length() <= 11) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+        });
+    }
+
+    private void showError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "System Validation", JOptionPane.ERROR_MESSAGE);
     }
 
     private JPanel createTripSummaryPanel() {
@@ -189,17 +167,37 @@ public class PassengerInfoUI extends JFrame {
         card.add(createSummaryLabel("DEPARTURE TIME", ticket.getDepartureTime(), Color.GRAY));
         card.add(Box.createRigidArea(new Dimension(0, 20)));
         card.add(createSummaryLabel("VESSEL", ticket.getVesselName(), Color.GRAY));
-        card.add(Box.createRigidArea(new Dimension(0, 20)));
-        card.add(createSummaryLabel("TRAVEL TIME", ticket.getTravelTime(), Color.GRAY));
         card.add(Box.createRigidArea(new Dimension(0, 30)));
         
         JLabel lblPrice = new JLabel("₱" + String.format("%.2f", ticket.getBaseFare()), SwingConstants.RIGHT);
         lblPrice.setFont(new Font("SansSerif", Font.BOLD, 32));
         lblPrice.setForeground(new Color(39, 174, 96));
-        lblPrice.setAlignmentX(Component.CENTER_ALIGNMENT);
         card.add(lblPrice);
 
         p.add(card, BorderLayout.CENTER);
+        return p;
+    }
+
+    private JPanel createModernFooter() {
+        JPanel p = new JPanel(new GridBagLayout());
+        p.setOpaque(false);
+        p.setBorder(BorderFactory.createEmptyBorder(20, 50, 40, 50));
+
+        btnBack = new JButton("BACK");
+        btnValidate = new JButton("VALIDATE INFORMATION");
+        lblStatus = new JLabel("SYSTEM STATUS: ONLINE");
+        lblStatus.setForeground(STATUS_GREEN);
+        lblStatus.setFont(new Font("Monospaced", Font.BOLD, 13));
+
+        styleButton(btnBack, new Color(60, 63, 65));
+        styleButton(btnValidate, ACCENT_BLUE);
+
+        GridBagConstraints g = new GridBagConstraints();
+        g.weightx = 1.0; g.fill = GridBagConstraints.HORIZONTAL;
+        g.gridx = 0; p.add(btnBack, g);
+        g.weightx = 0; g.gridx = 1; g.insets = new Insets(0, 40, 0, 40); p.add(lblStatus, g);
+        g.weightx = 1.0; g.gridx = 2; g.insets = new Insets(0, 0, 0, 0); p.add(btnValidate, g);
+
         return p;
     }
 
@@ -211,7 +209,6 @@ public class PassengerInfoUI extends JFrame {
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createEmptyBorder());
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
         btn.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) { btn.setBackground(HOVER_BLUE); }
             public void mouseExited(MouseEvent e) { btn.setBackground(bg); }
@@ -243,7 +240,7 @@ public class PassengerInfoUI extends JFrame {
         JLabel t = new JLabel(title);
         t.setFont(new Font("SansSerif", Font.BOLD, 11));
         t.setForeground(tCol);
-        JLabel v = new JLabel(val);
+        JLabel v = new JLabel(val != null ? val : "---");
         v.setFont(new Font("SansSerif", Font.BOLD, 19));
         v.setForeground(Color.BLACK);
         p.add(t); p.add(v);

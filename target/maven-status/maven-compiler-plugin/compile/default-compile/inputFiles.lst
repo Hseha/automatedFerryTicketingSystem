@@ -1,9 +1,14 @@
 /home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/controller/VesselController.java
-/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/dao/DBConnection.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/dao/AdminDAO.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/dao/TicketDAO.java
 /home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/dao/VesselDAO.java
 /home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/model/Ticket.java
 /home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/model/Vessel.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/util/DBConnection.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/util/HashGenerator.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/view/AdminLoginUI.java
 /home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/view/DiscountPaymentUI.java
+/home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/view/FinalTicketUI.java
 /home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/view/IdentifyFerryUI.java
 /home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/view/PassengerInfoUI.java
 /home/Michael/NetBeansProjects/automatedFerryTicketingSystem/src/main/java/com/mycompany/automatedferryticketingsystem/view/WelcomeScreen.java

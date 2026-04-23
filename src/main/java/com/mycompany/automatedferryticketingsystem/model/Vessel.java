@@ -1,6 +1,9 @@
 package com.mycompany.automatedferryticketingsystem.model;
 
 public class Vessel {
+    // 1. Add this field to store the specific trip reference
+    private int tripId; 
+    
     private int vesselId; 
     private String vesselName;
     private String route;
@@ -9,11 +12,20 @@ public class Vessel {
     private String departureTime;
     private int capacity;
     private int remainingSeats;
-    private String tripStatus; // This matches the 8th column in your UI
+    private String tripStatus;
 
     public Vessel() {}
 
-    // Getters and Setters
+    // 2. Add these Getter and Setter for tripId
+    public int getTripId() { 
+        return tripId; 
+    }
+    
+    public void setTripId(int tripId) { 
+        this.tripId = tripId; 
+    }
+
+    // --- Existing Getters and Setters ---
     public int getVesselId() { return vesselId; }
     public void setVesselId(int vesselId) { this.vesselId = vesselId; }
 
@@ -38,7 +50,6 @@ public class Vessel {
     public int getRemainingSeats() { return remainingSeats; }
     public void setRemainingSeats(int remainingSeats) { this.remainingSeats = remainingSeats; }
 
-    // Crucial for the Controller to populate the 8th column
     public String getTripStatus() { return tripStatus; }
     public void setTripStatus(String tripStatus) { this.tripStatus = tripStatus; }
 }

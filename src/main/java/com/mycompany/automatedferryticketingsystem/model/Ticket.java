@@ -1,7 +1,7 @@
 package com.mycompany.automatedferryticketingsystem.model;
 
 public class Ticket {
-    // 1. Trip Info (Matches IdentifyFerryUI table columns)
+    // 1. Trip Info
     private int tripId;
     private String route;
     private String vesselName;
@@ -10,7 +10,7 @@ public class Ticket {
     private String eta;           
     private double baseFare;
     
-    // 2. Passenger Info (Matches PassengerInfoUI form)
+    // 2. Passenger Info
     private String transactionId;
     private String passengerName;
     private int age;
@@ -19,12 +19,13 @@ public class Ticket {
     private String category; 
     private String idNumber; 
     
-    // 3. System Calculations
+    // 3. System Calculations & Payment
     private double finalFare;
     private String seatNumber;
     private String paymentStatus = "Pending";
+    private String paymentMethod; // --- ADDED THIS ---
 
-    // UPDATED CONSTRUCTOR
+    // Constructor
     public Ticket(int tripId, String vesselName, String route, String vesselType, String departureTime, String eta, double baseFare) {
         this.tripId = tripId;
         this.vesselName = vesselName;
@@ -35,7 +36,7 @@ public class Ticket {
         this.baseFare = baseFare;
     }
 
-    // Business Logic for Discounts
+    // Business Logic
     public void applyDiscount() {
         if (category != null && !category.equalsIgnoreCase("Regular")) {
             this.finalFare = this.baseFare * 0.80; 
@@ -44,18 +45,18 @@ public class Ticket {
         }
     }
 
-    // --- HELPER FOR UI DISPLAY ---
-    /**
-     * Fixes "cannot find symbol" in PassengerInfoUI.
-     * Combines vessel details for a polished Trip Catalogue view.
-     */
     public String getTravelTime() { 
         String type = (vesselType != null) ? vesselType : "Standard";
         String arrival = (eta != null) ? eta : "TBA";
         return type + " (ETA: " + arrival + ")"; 
     }
 
-    // --- GETTERS ---
+    // --- GETTERS & SETTERS ---
+    
+    // Payment Method Getter/Setter (Fixes Maven Error)
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+
     public int getTripId() { return tripId; }
     public String getRoute() { return route; }
     public String getVesselName() { return vesselName; }
@@ -64,7 +65,6 @@ public class Ticket {
     public String getEta() { return eta; }
     public double getBaseFare() { return baseFare; }
 
-    // --- SETTERS & REMAINING GETTERS ---
     public String getPassengerName() { return passengerName; }
     public void setPassengerName(String name) { this.passengerName = name; }
     
@@ -79,7 +79,7 @@ public class Ticket {
 
     public void setCategory(String category) { 
         this.category = category; 
-        applyDiscount(); // Automatically update fare when category is set
+        applyDiscount(); 
     }
     public String getCategory() { return category; }
 
