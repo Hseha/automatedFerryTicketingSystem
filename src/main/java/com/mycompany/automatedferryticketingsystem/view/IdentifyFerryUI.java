@@ -6,31 +6,45 @@ import com.zaxxer.hikari.HikariDataSource;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 
+/**
+ * IdentifyFerryUI Class
+ * Mao ni ang main interface para sa mga pasahero para makapili sila og byahe.
+ * (This is the main passenger interface for selecting a voyage.)
+ */
 public class IdentifyFerryUI extends JFrame {
     private JTable ferryTable;
     private DefaultTableModel tableModel;
-    private JButton prcdbtn, btnAdmin;
+    private JButton prcdbtn;
     private JLabel lblStatus, lblSystemGreeting;
     private JTextField txtSearch;
     private HikariDataSource dataSource;
+    private VesselDAO dao; 
+    private VesselController controller; 
 
-    public IdentifyFerryUI(HikariDataSource dataSource) {
-        this.dataSource = dataSource;
+    private static final String SEARCH_HINT = "Search vessel, route, or type...";
 
-        // --- WINDOW SETUP ---
+    public IdentifyFerryUI(VesselDAO dao) {
+        this.dao = dao;
+        this.dataSource = dao.getDataSource(); 
+
+        // Pag-set sa window properties sama sa title ug size.
+        // (Setting window properties like title and size.)
         setTitle("AUTOMATED FERRY TICKETING SYSTEM");
-        setSize(1000, 700);
+        setSize(1200, 700); 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        setLocationRelativeTo(null); // Center sa screen.
         getContentPane().setBackground(new Color(240, 240, 240));
         setLayout(new BorderLayout());
 
-        // --- NORTH PANEL (Original Flat Header #2D2D30) ---
+        // Setup para sa secret shortcut para sa admin login.
+        setupSecretAdminAccess();
+
+        // --- NORTH PANEL ---
+        // Kini ang top section sa UI para sa title ug search bar.
+        // (The top section of the UI for the title and search bar.)
         JPanel northPanel = new JPanel(new BorderLayout());
         northPanel.setBackground(new Color(45, 45, 48)); 
         northPanel.setPreferredSize(new Dimension(1000, 110));
@@ -50,8 +64,10 @@ public class IdentifyFerryUI extends JFrame {
         titlePanel.add(lblTitle);
         titlePanel.add(lblSystemGreeting);
 
-        txtSearch = new JTextField("Search vessel, route, or type...");
+        txtSearch = new JTextField(SEARCH_HINT);
         txtSearch.setPreferredSize(new Dimension(280, 35));
+        txtSearch.setForeground(Color.GRAY);
+        setupSearchHintLogic();
         
         JPanel searchWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 15));
         searchWrapper.setOpaque(false);
@@ -60,29 +76,35 @@ public class IdentifyFerryUI extends JFrame {
         northPanel.add(titlePanel, BorderLayout.WEST);
         northPanel.add(searchWrapper, BorderLayout.EAST);
 
-        // --- CENTER PANEL (Table Area) ---
-        String[] cols = {"ID", "Vessel Name", "Route", "Vessel Type", "Status", "Departure", "Total", "Remaining", "Trip Status"};
+        // --- CENTER PANEL (Table) ---
+        // Pag-setup sa table columns para sa mga detalye sa barko.
+        // (Setting up table columns for vessel details.)
+        String[] cols = {"ID", "Vessel Name", "Route", "Vessel Type", "Status", "ETD", "ETA", "Pier", "Price", "Capacity", "Remaining", "Trip Status"};
         tableModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+            @Override public boolean isCellEditable(int r, int c) { return false; } // Dili ma-edit ang table cells.
         };
         ferryTable = new JTable(tableModel);
-        ferryTable.setRowHeight(40);
+        ferryTable.setRowHeight(45);
         ferryTable.setShowGrid(false);
-        ferryTable.setIntercellSpacing(new Dimension(0, 0));
+        ferryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         
-        // Hide ID Column
+        // Taguon ang ID column para dili makita sa user.
+        // (Hiding the ID column so it's not visible to the user.)
         ferryTable.getColumnModel().getColumn(0).setMinWidth(0);
         ferryTable.getColumnModel().getColumn(0).setMaxWidth(0);
 
-        // Header Styling
-        JTableHeader header = ferryTable.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        header.setBackground(new Color(248, 249, 250));
-        header.setPreferredSize(new Dimension(0, 45));
+        // --- RENDERERS ---
+        // Custom designs para sa status, time, ug remaining seats columns.
+        // (Custom designs for status, time, and remaining seats columns.)
+        StatusRenderer statusRenderer = new StatusRenderer();
+        ferryTable.getColumnModel().getColumn(4).setCellRenderer(statusRenderer); 
+        ferryTable.getColumnModel().getColumn(11).setCellRenderer(statusRenderer); 
 
-        // APPLY CUSTOM RENDERERS FOR DYNAMIC COLORS
-        ferryTable.getColumnModel().getColumn(4).setCellRenderer(new StatusRenderer()); 
-        ferryTable.getColumnModel().getColumn(7).setCellRenderer(new RemainingRenderer()); 
+        TimeRenderer timeRenderer = new TimeRenderer();
+        ferryTable.getColumnModel().getColumn(5).setCellRenderer(timeRenderer);    
+        ferryTable.getColumnModel().getColumn(6).setCellRenderer(timeRenderer);    
+        
+        ferryTable.getColumnModel().getColumn(10).setCellRenderer(new RemainingRenderer()); 
 
         JScrollPane sp = new JScrollPane(ferryTable);
         sp.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
@@ -91,98 +113,140 @@ public class IdentifyFerryUI extends JFrame {
         add(northPanel, BorderLayout.NORTH);
         add(sp, BorderLayout.CENTER);
 
-        // --- SOUTH PANEL (Original Dark Footer) ---
+        // --- SOUTH PANEL ---
+        // Ang footer section diin makita ang online status ug Proceed button.
+        // (The footer section where online status and Proceed button are located.)
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(new Color(45, 45, 48)); 
         footer.setPreferredSize(new Dimension(1000, 75));
         footer.setBorder(BorderFactory.createEmptyBorder(0, 40, 0, 40));
 
-        // Admin Login with Redirect Logic
-        btnAdmin = new JButton("ADMIN LOGIN");
-        btnAdmin.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnAdmin.setForeground(new Color(150, 150, 150));
-        btnAdmin.setContentAreaFilled(false);
-        btnAdmin.setBorderPainted(false);
-        btnAdmin.setFocusPainted(false);
-        btnAdmin.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // Blue Hover and Redirect
-        btnAdmin.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { btnAdmin.setForeground(new Color(100, 200, 255)); }
-            public void mouseExited(MouseEvent e) { btnAdmin.setForeground(new Color(150, 150, 150)); }
-        });
-
-        btnAdmin.addActionListener(e -> {
-            // REDIRECT TO ADMIN LOGIN UI
-            new AdminLoginUI(this.dataSource).setVisible(true);
-            this.dispose();
-        });
-
-        // Center: System Online Status
         lblStatus = new JLabel("● Online");
         lblStatus.setForeground(new Color(0, 204, 102)); 
         lblStatus.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblStatus.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Proceed Button
         prcdbtn = new JButton("PROCEED");
         prcdbtn.setBackground(new Color(60, 60, 60));
         prcdbtn.setForeground(Color.WHITE);
-        prcdbtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        prcdbtn.setPreferredSize(new Dimension(140, 40));
         prcdbtn.setFocusPainted(false);
+        prcdbtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        footer.add(btnAdmin, BorderLayout.WEST);
         footer.add(lblStatus, BorderLayout.CENTER);
         footer.add(prcdbtn, BorderLayout.EAST);
         add(footer, BorderLayout.SOUTH);
 
-        // Controller logic
-        VesselDAO dao = new VesselDAO(dataSource);
-        new VesselController(this, dao, this.dataSource).loadVesselData("");
+        // I-connect ang Controller para sa logic handles.
+        // (Connect the Controller for handling logic.)
+        this.controller = new VesselController(this, this.dao, this.dataSource);
     }
 
-    // --- TABLE COLOR LOGIC ---
-    class StatusRenderer extends DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
-            JLabel l = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
-            String val = String.valueOf(v);
-            l.setFont(new Font("Segoe UI", Font.BOLD, 13));
-            l.setHorizontalAlignment(SwingConstants.CENTER);
-            
-            if (val.equalsIgnoreCase("In Service")) l.setForeground(new Color(0, 180, 100));
-            else if (val.equalsIgnoreCase("Maintenance") || val.contains("Repair")) l.setForeground(new Color(220, 53, 69));
-            else l.setForeground(Color.BLACK);
-            return l;
-        }
-    }
-
-    class RemainingRenderer extends DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
-            JLabel l = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
-            String val = String.valueOf(v);
-            l.setFont(new Font("Segoe UI", Font.BOLD, 13));
-            l.setHorizontalAlignment(SwingConstants.CENTER);
-            
-            try {
-                if (val.equals("FULL")) {
-                    l.setForeground(Color.RED);
-                } else {
-                    int count = Integer.parseInt(val);
-                    if (count >= 100) l.setForeground(new Color(0, 180, 100)); // Plenty
-                    else if (count > 0) l.setForeground(Color.ORANGE); // Low
-                    else { l.setText("FULL"); l.setForeground(Color.RED); }
+    /**
+     * Logic para sa search placeholder text.
+     * (Logic for the search placeholder text.)
+     */
+    private void setupSearchHintLogic() {
+        txtSearch.addFocusListener(new FocusAdapter() {
+            @Override public void focusGained(FocusEvent e) {
+                if (txtSearch.getText().equals(SEARCH_HINT)) {
+                    txtSearch.setText("");
+                    txtSearch.setForeground(Color.BLACK);
                 }
-            } catch (Exception e) { l.setForeground(Color.BLACK); }
+            }
+            @Override public void focusLost(FocusEvent e) {
+                if (txtSearch.getText().isEmpty()) {
+                    txtSearch.setForeground(Color.GRAY);
+                    txtSearch.setText(SEARCH_HINT);
+                }
+            }
+        });
+    }
+
+    /**
+     * Secret key combination (CTRL + SHIFT + A) para maka-access ang admin.
+     * (Secret key combination for admin access.)
+     */
+    private void setupSecretAdminAccess() {
+        Action adminAction = new AbstractAction() {
+            @Override public void actionPerformed(ActionEvent e) {
+                new AdminLoginUI(dao).setVisible(true);
+                dispose(); // Isira ang karon nga window.
+            }
+        };
+        this.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("control shift A"), "openAdmin");
+        this.getRootPane().getActionMap().put("openAdmin", adminAction);
+    }
+
+    /**
+     * TimeRenderer Class
+     * Para nindot tan-awon ang oras sa byahe (ETD/ETA).
+     * (To style the voyage times ETD/ETA.)
+     */
+    class TimeRenderer extends DefaultTableCellRenderer {
+        @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+            JLabel l = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
+            l.setForeground(new Color(0, 153, 76)); // Green color para sa time.
+            l.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            l.setHorizontalAlignment(SwingConstants.CENTER);
             return l;
         }
     }
 
-    // --- GETTERS (Crucial for VesselController to compile) ---
+    /**
+     * StatusRenderer Class
+     * Logic para usbon ang text color base sa status sa barko.
+     * (Logic to change text color based on vessel status.)
+     */
+    class StatusRenderer extends DefaultTableCellRenderer {
+        @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+            JLabel l = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
+            String val = (v != null) ? String.valueOf(v) : "";
+            l.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            l.setHorizontalAlignment(SwingConstants.CENTER);
+            
+            // Logic: I-green ang "Available" o "In Service".
+            // (Logic: Color "Available" or "In Service" green.)
+            if (val.equalsIgnoreCase("Available") || val.equalsIgnoreCase("Boarding") || val.equalsIgnoreCase("In Service")) {
+                l.setForeground(new Color(0, 180, 100)); 
+                if (val.equalsIgnoreCase("Available")) {
+                    l.setText("Boarding"); // Usbon ang text para mas formal.
+                }
+            } else {
+                l.setForeground(new Color(220, 53, 69)); // Red kung naay issue o delay.
+            }
+            return l;
+        }
+    }
+
+    /**
+     * RemainingRenderer Class
+     * Logic para i-check kung puno na ba ang barko.
+     * (Logic to check if the vessel is already full.)
+     */
+    class RemainingRenderer extends DefaultTableCellRenderer {
+        @Override public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+            JLabel l = (JLabel) super.getTableCellRendererComponent(t, v, s, f, r, c);
+            try {
+                int count = Integer.parseInt(String.valueOf(v));
+                if (count <= 0) { 
+                    l.setText("FULL"); // Kung zero na ang seats, i-mark og FULL.
+                    l.setForeground(new Color(220, 53, 69)); 
+                } else { 
+                    l.setForeground(new Color(0, 180, 100)); 
+                }
+            } catch (Exception e) { 
+                l.setForeground(Color.BLACK); 
+            }
+            l.setHorizontalAlignment(SwingConstants.CENTER);
+            return l;
+        }
+    }
+
+    // --- GETTERS ---
+    // Gigamit ni para ma-access ang components gikan sa Controller.
+    // (Used to access components from the Controller.)
+    public JLabel getLblStatus() { return lblStatus; }
     public JTable getFerryTable() { return ferryTable; }
     public JButton getBtnProceed() { return prcdbtn; }
     public DefaultTableModel getTableModel() { return tableModel; }
-    public JLabel getLblStatus() { return lblStatus; }
+    public JTextField getTxtSearch() { return txtSearch; }
 }

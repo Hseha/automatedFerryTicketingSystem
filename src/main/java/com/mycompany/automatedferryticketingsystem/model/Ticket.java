@@ -7,15 +7,17 @@ public class Ticket {
     private String vesselName;
     private String vesselType;    
     private String departureTime; 
-    private String eta;           
+    private String eta;            
     private double baseFare;
+    private String pierNo; 
+    private int capacity; // --- ADDED CAPACITY ---
     
     // 2. Passenger Info
     private String transactionId;
     private String passengerName;
     private int age;
     private String contactNumber; 
-    private String address;       
+    private String address;        
     private String category; 
     private String idNumber; 
     
@@ -23,10 +25,10 @@ public class Ticket {
     private double finalFare;
     private String seatNumber;
     private String paymentStatus = "Pending";
-    private String paymentMethod; // --- ADDED THIS ---
+    private String paymentMethod; 
 
-    // Constructor
-    public Ticket(int tripId, String vesselName, String route, String vesselType, String departureTime, String eta, double baseFare) {
+    // Updated Constructor to include pierNo and capacity
+    public Ticket(int tripId, String vesselName, String route, String vesselType, String departureTime, String eta, double baseFare, String pierNo, int capacity) {
         this.tripId = tripId;
         this.vesselName = vesselName;
         this.route = route;
@@ -34,7 +36,12 @@ public class Ticket {
         this.departureTime = departureTime;
         this.eta = eta;
         this.baseFare = baseFare;
+        this.pierNo = pierNo;
+        this.capacity = capacity; // Initialize capacity
     }
+
+    // Default constructor for flexibility
+    public Ticket() {}
 
     // Business Logic
     public void applyDiscount() {
@@ -51,14 +58,30 @@ public class Ticket {
         return type + " (ETA: " + arrival + ")"; 
     }
 
-    // --- GETTERS & SETTERS ---
+    // --- CAPACITY GETTER & SETTER (Fixes Compilation Error) ---
+    public int getCapacity() { return capacity; }
+    public void setCapacity(int capacity) { this.capacity = capacity; }
+
+    // --- PIER NO GETTER & SETTER ---
+    public String getPierNo() { 
+        return (pierNo == null || pierNo.trim().isEmpty()) ? "TBD" : pierNo; 
+    }
     
-    // Payment Method Getter/Setter (Fixes Maven Error)
+    public void setPierNo(String pierNo) { this.pierNo = pierNo; }
+
+    // --- OTHER GETTERS & SETTERS ---
+    
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
 
     public int getTripId() { return tripId; }
     public String getRoute() { return route; }
+    
+    public void setRoute(String route) { this.route = route; }
+    public void setVesselName(String name) { this.vesselName = name; }
+    public void setDepartureTime(String time) { this.departureTime = time; }
+    public void setBaseFare(double fare) { this.baseFare = fare; }
+
     public String getVesselName() { return vesselName; }
     public String getVesselType() { return vesselType; }
     public String getDepartureTime() { return departureTime; }

@@ -1,31 +1,37 @@
 package com.mycompany.automatedferryticketingsystem.model;
 
+/**
+ * CORE LOGIC: Data Modeling (POJO).
+ * Kini nagsilbing "container" sa vessel information para dali i-pasa-pasa sa code.
+ */
 public class Vessel {
-    // 1. Add this field to store the specific trip reference
+    
+    // 1. Relational Logic:
+    // tripId is used as a foreign key reference para mahibal-an kung unsa nga schedule kini nga barko.
     private int tripId; 
     
+    // 2. Physical & Operational Attributes:
+    // Mao ni ang mga columns sa imong database table.
     private int vesselId; 
     private String vesselName;
     private String route;
     private String vesselType;
-    private String status;
+    private String status;         // Vessel condition (e.g., In Service, Maintenance)
     private String departureTime;
     private int capacity;
-    private int remainingSeats;
-    private String tripStatus;
+    private int remainingSeats;    // Dynamic count para sa booking logic
+    private String tripStatus;     // Operational state (e.g., Available, Delayed, Cancelled)
 
-    public Vessel() {}
-
-    // 2. Add these Getter and Setter for tripId
-    public int getTripId() { 
-        return tripId; 
-    }
-    
-    public void setTripId(int tripId) { 
-        this.tripId = tripId; 
+    public Vessel() {
+        // Default constructor para sa flexibility sa object creation.
     }
 
-    // --- Existing Getters and Setters ---
+    // --- ACCESSOR LOGIC (Getters & Setters) ---
+    // Gigamit ni para sa Encapsulation: controlled access sa mga private variables.
+
+    public int getTripId() { return tripId; }
+    public void setTripId(int tripId) { this.tripId = tripId; }
+
     public int getVesselId() { return vesselId; }
     public void setVesselId(int vesselId) { this.vesselId = vesselId; }
 
