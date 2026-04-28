@@ -9,13 +9,22 @@ import java.awt.*;
 import java.awt.event.*;
 
 /**
- * CORE LOGIC: Staff Login portal.
- * Handles authentication and navigation between the public Kiosk and Admin Dashboard.
+ * LOGIC EXPLANATION:
+ * This class handles the Staff Login window. Gi-inherit niya ang traits sa JFrame 
+ * para mahimong window, then gi-encapsulate ang fields para safe ang data. 
+ * High-level abstraction gihapon ni kay wala kabalo ang UI giunsa pag-check 
+ * ang password sa DB—basta kay valid ang login, mo-proceed ra siya.
  */
+
+// // Inheritance
 public class AdminLoginUI extends JFrame {
+    
+    // // Encapsulation
     private JTextField txtUsername;
     private JPasswordField txtPassword;
     private JButton btnLogin, btnBack;
+    
+    // // Composition
     private HikariDataSource dataSource;
     private VesselDAO dao; 
     
@@ -25,14 +34,16 @@ public class AdminLoginUI extends JFrame {
 
     public AdminLoginUI(VesselDAO dao) {
         this.dao = dao;
-        // Data Integrity: Ensure dataSource exists for database calls
         this.dataSource = (dao != null) ? dao.getDataSource() : null; 
         
         initUI();
         setupEvents();
     }
 
-    // UI Logic: Manual layout positioning to match a specific "Figma-style" dark theme
+    /**
+     * Ginahimo ani ang layout setup (size, colors, and positioning).
+     * Bali, gi-set up ang aesthetics sa portal para nindot tan-awon sa user.
+     */
     private void initUI() {
         setTitle("STAFF PORTAL");
         setSize(450, 600);
@@ -90,7 +101,6 @@ public class AdminLoginUI extends JFrame {
         mainPanel.add(btnBack);
     }
 
-    // Styling Logic: Applies consistent dark-mode aesthetic to input fields
     private void styleField(JTextField field) {
         field.setBackground(FIELD_BG);
         field.setForeground(FIGMA_GREEN);
@@ -100,8 +110,12 @@ public class AdminLoginUI extends JFrame {
             BorderFactory.createEmptyBorder(5, 10, 5, 10)));
     }
 
+    /**
+     * Logic para sa event handling—basically namantay lang ni kung gi-click 
+     * ang button o gi-press ang enter para mo-trigger ang login validation.
+     */
     private void setupEvents() {
-        // Accessibility Logic: Triggers login when user presses Enter key
+        // // Polymorphism
         KeyAdapter enterKey = new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -111,7 +125,7 @@ public class AdminLoginUI extends JFrame {
         txtUsername.addKeyListener(enterKey);
         txtPassword.addKeyListener(enterKey);
 
-        // Authentication Logic: Validates credentials via AdminDAO
+        // // Abstraction
         btnLogin.addActionListener(e -> {
             String user = txtUsername.getText().trim();
             String pass = new String(txtPassword.getPassword());
@@ -121,18 +135,18 @@ public class AdminLoginUI extends JFrame {
                 return;
             }
 
+            // // Composition
             AdminDAO adminDAO = new AdminDAO(dataSource);
             if (adminDAO.authenticate(user, pass)) {
                 showSuccessMockup(user);
-                new FerryAdminDashboard(this.dao).setVisible(true); // Open Admin Hub
-                this.dispose(); // Close login screen
+                new FerryAdminDashboard(this.dao).setVisible(true); 
+                this.dispose(); 
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid Credentials.", "Error", JOptionPane.ERROR_MESSAGE);
                 txtPassword.setText(""); 
             }
         });
 
-        // Navigation Logic: Re-initializes the public view and its controller
         btnBack.addActionListener(e -> {
             IdentifyFerryUI kioskView = new IdentifyFerryUI(this.dao);
             new VesselController(kioskView, this.dao, this.dataSource);

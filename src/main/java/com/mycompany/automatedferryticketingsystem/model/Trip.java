@@ -1,35 +1,36 @@
 package com.mycompany.automatedferryticketingsystem.model;
 
 /**
- * CORE LOGIC: Trip Entity Model.
- * Mao ni ang mapping sa gi-join nga 'trips' ug 'vessels' tables gikan sa MariaDB.
- * Kini ang nagsilbing "Data Carrier" sa tibuok system.
+ * [ENCAPSULATION] - Kini nga class nag-bundle sa data gikan sa 'trips' ug 'vessels' tables.
+ * Pinaagi sa paggamit og 'private' fields, masiguro nato nga ang internal state 
+ * sa matag trip dili basta-basta ma-usab sa gawas nga classes.
  */
 public class Trip {
-    // Database Keys: Kinahanglanon para sa relational queries.
+    
+    // Database Keys: Relational identifiers para sa MariaDB logic.
     private int tripId;
     private int vesselId;
     
-    // Info Fields: Unsa ang makit-an sa passenger sa kiosk.
+    // Info Fields: Display attributes para sa kiosk UI.
     private String vesselName;
     private String vesselType;
     private String route;
     private double baseFare;
-    private String etd; // Estimated Time of Departure
-    private String eta; // Estimated Time of Arrival
+    private String etd; 
+    private String eta; 
     
-    // Operational States: Logic para sa status display.
+    // Operational States: Logic para sa status monitoring.
     private String operationalStatus; 
     private String displayStatus;      
     private String pierNo; 
     private String statusReason;
     
-    // Counter Logic: Kinahanglan para sa booking validation.
+    // [STATE MANAGEMENT] - Mga counters para sa booking validation.
     private int capacity;       
     private int seatsTaken;
     private int seatsAvailable; 
 
-    // Constructor: Gigamit sa DAO para i-populate ang list of trips gikan sa ResultSet.
+    // Constructor: Gigamit sa DAO para i-map ang ResultSet ngadto sa Java Object.
     public Trip(int tripId, int vesselId, String vesselName, String vesselType, String route, 
                 double baseFare, String etd, String eta, String operationalStatus, 
                 String displayStatus, String pierNo, String statusReason, int capacity, int seatsAvailable) {
@@ -51,11 +52,28 @@ public class Trip {
 
     public Trip() {}
 
-    // --- IDENTIFICATION LOGIC ---
+    /**
+     * [ABSTRACTION] - Gi-hide niini ang logic sa pag-decide kung pwede ba maka-book.
+     * Ang UI mo-call lang og 'canBook()' ug dili na kinahanglan mahibalo sa 
+     * status conditions (Cancelled, Grounded, etc.).
+     */
+    public boolean canBook() {
+        String trip = getTripStatus();
+        String vessel = getVesselStatus();
+        if (trip.equalsIgnoreCase("Cancelled")) return false;
+        if (vessel.equalsIgnoreCase("Grounded") || vessel.equalsIgnoreCase("Maintenance")) return false;
+        return seatsAvailable > 0; 
+    }
+
+    public boolean isDelayed() {
+        return getTripStatus().equalsIgnoreCase("Delayed");
+    }
+
+    // --- [ENCAPSULATION: GETTERS & SETTERS] ---
+
     public int getTripId() { return tripId; }
     public int getVesselId() { return vesselId; } 
     
-    // --- DISPLAY LOGIC ---
     public String getVesselName() { return vesselName; }
     public String getVesselType() { return vesselType; }
     public String getRoute() { return route; }
@@ -64,27 +82,10 @@ public class Trip {
     public String getEta() { return eta; }
     public int getSeatsTaken() { return seatsTaken; }
     
-    // --- FIXED: ADDED MISSING GETTERS PARA SA COMPILATION ---
-    
-    /**
-     * LOGIC: Pagkuha sa maximum capacity sa barko.
-     * Gikinahanglan ni sa VesselDAO ug AdminDashboard.
-     */
-    public int getCapacity() { 
-        return capacity; 
-    }
+    public int getCapacity() { return capacity; }
 
-    /**
-     * LOGIC: Pagkuha sa nahabilin nga slots.
-     * Mao ni ang gamiton sa VesselController para i-block ang booking kon 0 na.
-     */
-    public int getSeatsAvailable() { 
-        return seatsAvailable; 
-    }
+    public int getSeatsAvailable() { return seatsAvailable; }
 
-    /**
-     * LOGIC: Pagkuha sa rason ngano na-delay o na-cancel ang trip.
-     */
     public String getStatusReason() { 
         return (statusReason == null || statusReason.isEmpty()) ? "N/A" : statusReason; 
     }
@@ -101,20 +102,7 @@ public class Trip {
         return (displayStatus == null || displayStatus.isEmpty()) ? "Available" : displayStatus; 
     }
 
-    // --- BUSINESS LOGIC (SAFETY CHECKS) ---
-    public boolean canBook() {
-        String trip = getTripStatus();
-        String vessel = getVesselStatus();
-        if (trip.equalsIgnoreCase("Cancelled")) return false;
-        if (vessel.equalsIgnoreCase("Grounded") || vessel.equalsIgnoreCase("Maintenance")) return false;
-        return seatsAvailable > 0; 
-    }
-
-    public boolean isDelayed() {
-        return getTripStatus().equalsIgnoreCase("Delayed");
-    }
-
-    // --- SETTERS ---
+    // SETTERS
     public void setTripId(int id) { this.tripId = id; }
     public void setVesselId(int vesselId) { this.vesselId = vesselId; }
     public void setVesselName(String name) { this.vesselName = name; }

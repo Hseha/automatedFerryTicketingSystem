@@ -1,17 +1,17 @@
 package com.mycompany.automatedferryticketingsystem.model;
 
 /**
- * CORE LOGIC: Data Modeling (POJO).
- * Kini nagsilbing "container" sa vessel information para dali i-pasa-pasa sa code.
+ * [ENCAPSULATION] - Kini nga class nagsilbing "Data Container" para sa Vessel 
+ * information. Gigamit ang 'private' fields aron maprotektahan ang integridad 
+ * sa data samtang gina-pasa kini sa lain-laing layers sa system (DAO, View, Controller).
  */
 public class Vessel {
     
-    // 1. Relational Logic:
-    // tripId is used as a foreign key reference para mahibal-an kung unsa nga schedule kini nga barko.
+    // [RELATIONAL LOGIC] - Foreign key reference para sa scheduling.
     private int tripId; 
     
-    // 2. Physical & Operational Attributes:
-    // Mao ni ang mga columns sa imong database table.
+    // [STATE MANAGEMENT] - Mga attributes nga nagrepresentar sa physical ug 
+    // operational status sa barko gikan sa database.
     private int vesselId; 
     private String vesselName;
     private String route;
@@ -19,15 +19,18 @@ public class Vessel {
     private String status;         // Vessel condition (e.g., In Service, Maintenance)
     private String departureTime;
     private int capacity;
-    private int remainingSeats;    // Dynamic count para sa booking logic
-    private String tripStatus;     // Operational state (e.g., Available, Delayed, Cancelled)
+    private int remainingSeats;    // Dynamic count para sa booking validation
+    private String tripStatus;     // Operational state (e.g., Available, Delayed)
 
+    /**
+     * [POJO DESIGN] - Default constructor para sa framework flexibility 
+     * ug manual object instantiation.
+     */
     public Vessel() {
-        // Default constructor para sa flexibility sa object creation.
     }
 
-    // --- ACCESSOR LOGIC (Getters & Setters) ---
-    // Gigamit ni para sa Encapsulation: controlled access sa mga private variables.
+    // --- [ENCAPSULATION: ACCESSOR LOGIC] ---
+    // Gigamit ni para sa controlled access (Read/Write) sa mga private variables.
 
     public int getTripId() { return tripId; }
     public void setTripId(int tripId) { this.tripId = tripId; }

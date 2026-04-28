@@ -1,7 +1,13 @@
 package com.mycompany.automatedferryticketingsystem.model;
 
+/**
+ * [ENCAPSULATION] - Kini nga class nag-bundle sa tanang attributes sa usa ka Ticket 
+ * ngadto sa usa ka unit. Gigamit ang 'private' fields aron maprotektahan ang data 
+ * gikan sa direktang external modification.
+ */
 public class Ticket {
-    // 1. Trip Info
+    
+    // [STATE MANAGEMENT] - Mga data fields nga nagrepresentar sa ticket status.
     private int tripId;
     private String route;
     private String vesselName;
@@ -10,9 +16,8 @@ public class Ticket {
     private String eta;            
     private double baseFare;
     private String pierNo; 
-    private int capacity; // --- ADDED CAPACITY ---
+    private int capacity; 
     
-    // 2. Passenger Info
     private String transactionId;
     private String passengerName;
     private int age;
@@ -21,13 +26,12 @@ public class Ticket {
     private String category; 
     private String idNumber; 
     
-    // 3. System Calculations & Payment
     private double finalFare;
     private String seatNumber;
     private String paymentStatus = "Pending";
     private String paymentMethod; 
 
-    // Updated Constructor to include pierNo and capacity
+    // Constructor: Gigamit para sa pag-initialize sa mga importanteng barko ug trip details.
     public Ticket(int tripId, String vesselName, String route, String vesselType, String departureTime, String eta, double baseFare, String pierNo, int capacity) {
         this.tripId = tripId;
         this.vesselName = vesselName;
@@ -37,16 +41,18 @@ public class Ticket {
         this.eta = eta;
         this.baseFare = baseFare;
         this.pierNo = pierNo;
-        this.capacity = capacity; // Initialize capacity
+        this.capacity = capacity; 
     }
 
-    // Default constructor for flexibility
     public Ticket() {}
 
-    // Business Logic
+    /**
+     * [ABSTRACTION] - Ang user (o ubang classes) dili na kinahanglan mahibalo sa complex 
+     * math sa diskwento. I-call lang ang 'applyDiscount()' ug ang system na ang bahala.
+     */
     public void applyDiscount() {
         if (category != null && !category.equalsIgnoreCase("Regular")) {
-            this.finalFare = this.baseFare * 0.80; 
+            this.finalFare = this.baseFare * 0.80; // Default 20% discount (PWD/Senior/Student)
         } else {
             this.finalFare = this.baseFare;
         }
@@ -58,35 +64,35 @@ public class Ticket {
         return type + " (ETA: " + arrival + ")"; 
     }
 
-    // --- CAPACITY GETTER & SETTER (Fixes Compilation Error) ---
+    // --- [ENCAPSULATION: GETTERS & SETTERS] ---
+    // Kini ang controlled access points para sa atong private fields.
+
     public int getCapacity() { return capacity; }
     public void setCapacity(int capacity) { this.capacity = capacity; }
 
-    // --- PIER NO GETTER & SETTER ---
     public String getPierNo() { 
         return (pierNo == null || pierNo.trim().isEmpty()) ? "TBD" : pierNo; 
     }
-    
     public void setPierNo(String pierNo) { this.pierNo = pierNo; }
 
-    // --- OTHER GETTERS & SETTERS ---
-    
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
 
     public int getTripId() { return tripId; }
     public String getRoute() { return route; }
-    
     public void setRoute(String route) { this.route = route; }
-    public void setVesselName(String name) { this.vesselName = name; }
-    public void setDepartureTime(String time) { this.departureTime = time; }
-    public void setBaseFare(double fare) { this.baseFare = fare; }
 
+    public void setVesselName(String name) { this.vesselName = name; }
     public String getVesselName() { return vesselName; }
-    public String getVesselType() { return vesselType; }
+
+    public void setDepartureTime(String time) { this.departureTime = time; }
     public String getDepartureTime() { return departureTime; }
-    public String getEta() { return eta; }
+
+    public void setBaseFare(double fare) { this.baseFare = fare; }
     public double getBaseFare() { return baseFare; }
+
+    public String getVesselType() { return vesselType; }
+    public String getEta() { return eta; }
 
     public String getPassengerName() { return passengerName; }
     public void setPassengerName(String name) { this.passengerName = name; }
@@ -102,7 +108,7 @@ public class Ticket {
 
     public void setCategory(String category) { 
         this.category = category; 
-        applyDiscount(); 
+        applyDiscount(); // Automatic computation inig set sa category.
     }
     public String getCategory() { return category; }
 

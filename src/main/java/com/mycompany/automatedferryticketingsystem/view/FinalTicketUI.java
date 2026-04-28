@@ -12,16 +12,19 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-// --- ADDED FOR DYNAMIC DATE ---
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * FinalTicketUI Class
- * Mao ni ang last screen diin makita ang official ticket ug ang QR code.
- * (This is the last screen where the official ticket and QR code are displayed.)
+ * [INHERITANCE] - Kini nga class naggamit sa JFrame aron mahimong usa ka 
+ * ganap nga Window/UI component.
+ * * [ABSTRACTION] - Gi-hide niini ang proseso sa pag-generate sa QR Code 
+ * ug ang pag-save sa database. Ang user makakita ra sa "Done" button.
  */
 public class FinalTicketUI extends JFrame {
+    
+    // [ENCAPSULATION] - Gi-private ang data fields aron dili ma-access 
+    // o ma-usab sa ubang screens nga walay permiso.
     private Ticket ticket;
     private VesselDAO dao;
 
@@ -30,9 +33,7 @@ public class FinalTicketUI extends JFrame {
         this.ticket = ticket;
         HikariDataSource ds = dao.getDataSource();
 
-        // 1. DATA SYNC
-        // Siguraduhon nga naay seat number bago i-display.
-        // (Ensures there is a seat number before displaying.)
+        // 1. DATA SYNC LOGIC
         if (ticket.getSeatNumber() == null || ticket.getSeatNumber().isEmpty() || ticket.getSeatNumber().equals("null")) {
             TicketDAO tempDao = new TicketDAO(ds);
             int nextSeat = tempDao.getNextSeatNumber(ticket.getTripId());
@@ -40,7 +41,6 @@ public class FinalTicketUI extends JFrame {
         }
 
         setTitle("OFFICIAL TICKET - " + ticket.getTransactionId());
-        
         setSize(450, 950); 
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -81,13 +81,8 @@ public class FinalTicketUI extends JFrame {
         infoPanel.add(createDataRow("Vessel:", ticket.getVesselName()));
         infoPanel.add(createDataRow("Route:", ticket.getRoute()));
         infoPanel.add(createDataRow("Departure:", ticket.getDepartureTime()));
-        
-        // --- PIER NUMBER ---
         infoPanel.add(createDataRow("Pier/Gate:", ticket.getPierNo())); 
         
-        // --- DYNAMIC DATE LOGIC ---
-        // Kuhaon ang petsa karon para i-print sa ticket.
-        // (Gets the current date to print on the ticket.)
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MMMM dd, yyyy");
         String currentDate = LocalDateTime.now().format(dtf);
         infoPanel.add(createDataRow("Date:", currentDate)); 
@@ -103,8 +98,6 @@ public class FinalTicketUI extends JFrame {
         mainContainer.add(Box.createRigidArea(new Dimension(0, 20)));
 
         // --- 3. ASSIGNED SEAT BLACK BOX ---
-        // Black box design para klaro kaayo ang seat number.
-        // (Black box design so the seat number is very clear.)
         JPanel seatPanel = new JPanel();
         seatPanel.setLayout(new BoxLayout(seatPanel, BoxLayout.Y_AXIS));
         seatPanel.setBackground(Color.BLACK);
@@ -128,8 +121,6 @@ public class FinalTicketUI extends JFrame {
         mainContainer.add(seatPanel);
 
         // --- 4. SCAN SECTION ---
-        // Gi-generate ang QR Code base sa Transaction ID.
-        // (QR Code is generated based on the Transaction ID.)
         JPanel scanPanel = new JPanel();
         scanPanel.setLayout(new BoxLayout(scanPanel, BoxLayout.Y_AXIS));
         scanPanel.setBackground(new Color(33, 33, 33)); 
@@ -143,6 +134,7 @@ public class FinalTicketUI extends JFrame {
         lblScan.setBorder(BorderFactory.createEmptyBorder(15, 0, 10, 0));
         scanPanel.add(lblScan);
 
+        // [ABSTRACTION] - Gi-call lang ang method, tago ang complexity sa QR matrix logic.
         JLabel qrLabel = new JLabel(generateQRCode(ticket.getTransactionId(), 150, 150));
         qrLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         qrLabel.setOpaque(true);
@@ -161,8 +153,6 @@ public class FinalTicketUI extends JFrame {
         mainContainer.add(createDottedSeparator());
 
         // --- 5. FOOTER BUTTON ---
-        // Mao ni ang button nga tighuman sa process ug tig-save sa database.
-        // (This button completes the process and saves to the database.)
         JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 15));
         footerPanel.setBackground(Color.WHITE);
         
@@ -175,8 +165,7 @@ public class FinalTicketUI extends JFrame {
         
         btnDone.addActionListener(e -> {
             TicketDAO ticketDao = new TicketDAO(ds);
-            // I-save ang final data sa MariaDB database.
-            // (Save the final data to the MariaDB database.)
+            // [ABSTRACTION] - Save operation implementation is hidden from the UI.
             if (ticketDao.saveTicket(ticket)) {
                 new WelcomeScreen().setVisible(true);
                 this.dispose();
@@ -191,10 +180,7 @@ public class FinalTicketUI extends JFrame {
         add(mainContainer, BorderLayout.CENTER);
     }
     
-    /**
-     * Custom component para sa dotted line separator.
-     * (Custom component for a dotted line separator.)
-     */
+    // [ENCAPSULATION] - Helper methods are private to protect internal component generation.
     private JPanel createDottedSeparator() {
         JPanel panel = new JPanel() {
             @Override
@@ -236,10 +222,6 @@ public class FinalTicketUI extends JFrame {
         return p;
     }
 
-    /**
-     * Function para i-convert ang text ngadto sa QR Code image.
-     * (Function to convert text into a QR Code image.)
-     */
     private ImageIcon generateQRCode(String text, int width, int height) {
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();

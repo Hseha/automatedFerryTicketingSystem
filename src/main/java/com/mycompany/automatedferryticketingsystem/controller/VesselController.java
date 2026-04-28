@@ -16,13 +16,19 @@ import java.awt.event.ActionEvent;
  * [LOGIC OVERVIEW]
  * Kini ang 'Brain' sa imong system. Ang Controller ang nag-handle sa button clicks, 
  * pag-load sa data gikan sa DAO, ug pag-update sa hitsura sa imong UI.
+ * [OOP CONCEPT: ABSTRACTION] - Ang Controller nag-tago sa komplikadong database 
+ * operations ug nag-provide lang og simple nga interface para sa UI communication.
  */
 public class VesselController {
+    // [OOP CONCEPT: ENCAPSULATION] - Ang paggamit sa 'private' modifiers aron 
+    // ma-bundle ang data ug methods sa usa ka unit ug protektahan kini gikan sa external interference.
     private final VesselDAO dao;
     private final IdentifyFerryUI view;
     private final HikariDataSource dataSource;
     private List<Trip> currentTrips; 
 
+    // [OOP CONCEPT: COMPOSITION] - Ang Controller "naggamit" og uban nga objects (DAO, View).
+    // Kini usa ka porma sa "Has-A" relationship imbes nga Inheritance.
     public VesselController(IdentifyFerryUI view, VesselDAO dao, HikariDataSource dataSource) {
         this.view = view;
         this.dao = dao;
@@ -33,6 +39,9 @@ public class VesselController {
     // Logic: I-bind ang listeners sa UI components inig start sa app.
     private void initController() {
         if (view != null && view.getBtnProceed() != null) {
+            // [OOP CONCEPT: INTERFACE & POLYMORPHISM] - Ang 'ActionListener' kay usa ka interface.
+            // Ang paggamit sa Lambda (ActionEvent e) nagpakita og polymorphism diin ang 
+            // 'actionPerformed' method gi-implementar base sa kinahanglanon sa button.
             view.getBtnProceed().addActionListener((ActionEvent e) -> {
                 handleProceedAction(); // Triggered kung i-click ang 'Proceed' button.
             });
@@ -91,6 +100,8 @@ public class VesselController {
     /**
      * LOGIC: Multi-threading with SwingWorker.
      * Importante ni para dili mo-'Freeze' ang imong UI samtang nag-fetch og data gikan sa database.
+     * [OOP CONCEPT: INHERITANCE] - Ang 'SwingWorker' gi-extend (subclassed) isip 
+     * anonymous class aron ma-inherit ang iyang background threading capabilities.
      */
     public void loadVesselData(String searchTerm) {
         if (view != null && view.getBtnProceed() != null) {
@@ -174,6 +185,8 @@ public class VesselController {
 
         // Logic: Kung operational, i-pass ang data sa sunod nga window (PassengerInfoUI).
         if (selectedTrip.getTripStatus().equalsIgnoreCase("Available") || selectedTrip.getTripStatus().equalsIgnoreCase("Boarding")) {
+            // [OOP CONCEPT: OBJECT INSTANTIATION] - Pag-create og bag-ong 'Ticket' object 
+            // aron ma-transfer ang data gikan sa Model (Trip) ngadto sa sunod nga View.
             Ticket ticket = new Ticket(
                 selectedTrip.getTripId(), selectedTrip.getVesselName(), selectedTrip.getRoute(),
                 selectedTrip.getVesselType(), selectedTrip.getEtd(), selectedTrip.getEta(),

@@ -17,11 +17,15 @@ import java.awt.event.MouseEvent;
 /**
  * DiscountPaymentUI Class
  * Kini nga screen maoy tig-proseso sa bayad ug tig-compute sa mga discounts.
- * (This screen processes payments and computes discounts.)
+ * [INHERITANCE] - Nag-EXTEND kini sa JFrame aron makahimo og Window.
  */
 public class DiscountPaymentUI extends JFrame {
+    
+    // [ENCAPSULATION] - Ang paggamit sa 'private' variables 
+    // aron dili direktang ma-manipulate ang data sa ticket ug components.
+    
     private Ticket ticket;
-    private VesselDAO dao; // Changed from HikariDataSource to VesselDAO
+    private VesselDAO dao; 
     private JComboBox<String> cbPassengerType;
     private JTextField txtIDNumber;
     private JLabel lblBaseFare, lblDiscount, lblTotal, lblErrorMsg;
@@ -35,7 +39,6 @@ public class DiscountPaymentUI extends JFrame {
     private final Color CARD_BG = new Color(45, 48, 55);
     private final Color ERROR_RED = new Color(255, 80, 80);
 
-    // Constructor updated to accept VesselDAO
     public DiscountPaymentUI(VesselDAO dao, Ticket ticket) {
         this.dao = dao;
         this.ticket = ticket;
@@ -56,8 +59,6 @@ public class DiscountPaymentUI extends JFrame {
         add(lblHeader, BorderLayout.NORTH);
 
         // --- MAIN CENTER PANEL ---
-        // Gi-organisar ang layout gamit ang GridBagLayout para flexible ang components.
-        // (Organizing the layout using GridBagLayout for component flexibility.)
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
@@ -82,7 +83,7 @@ public class DiscountPaymentUI extends JFrame {
         // --- FOOTER ---
         btnComplete = new JButton("COMPLETE PURCHASE");
         styleMainButton(btnComplete, new Color(60, 60, 64));
-        btnComplete.setEnabled(false); // Naka-disable ni sa sugod para masiguro nga naay payment method.
+        btnComplete.setEnabled(false); 
         
         JPanel footerPanel = new JPanel(new BorderLayout());
         footerPanel.setOpaque(false);
@@ -96,12 +97,13 @@ public class DiscountPaymentUI extends JFrame {
 
     /**
      * Logic para sa pag-validate sa ID ug paghuman sa transaction.
-     * (Logic for ID validation and completing the transaction.)
+     * [POLYMORPHISM] - Ang ActionListener naggamit og Lambda expressions
+     * aron mo-handle sa user interactions.
      */
     private void setupFinalActions() {
         btnValidateID.addActionListener(e -> {
             String id = txtIDNumber.getText().trim();
-            String idPattern = "^[a-zA-Z0-9-]+$"; // Regular expression para letters ug numbers ra.
+            String idPattern = "^[a-zA-Z0-9-]+$"; 
 
             if (!id.isEmpty() && !id.equals("Enter ID number") && id.matches(idPattern)) {
                 ticket.setIdNumber(id);
@@ -115,7 +117,6 @@ public class DiscountPaymentUI extends JFrame {
         });
 
         btnComplete.addActionListener(e -> {
-            // Pag-generate og transaction ID base sa oras karon.
             String txID = "F-TXN-" + (System.currentTimeMillis() % 1000000);
             ticket.setTransactionId(txID);
             
@@ -123,16 +124,12 @@ public class DiscountPaymentUI extends JFrame {
                 ticket.setIdNumber(txtIDNumber.getText().trim());
             }
 
-            // Pagbalhin ngadto sa final ticket screen.
+            // [OOP CONCEPT: OBJECT INSTANTIATION] - Pag-create og bag-ong screen object.
             new FinalTicketUI(this.dao, ticket).setVisible(true);
             this.dispose();
         });
     }
 
-    /**
-     * Summary panel para makita ang basic info sa pasahero.
-     * (Summary panel to display basic passenger info.)
-     */
     private JPanel createPassengerSummaryPanel() {
         JPanel p = new JPanel(new GridLayout(1, 3, 15, 0));
         p.setBackground(CARD_BG);
@@ -159,10 +156,6 @@ public class DiscountPaymentUI extends JFrame {
         return p;
     }
 
-    /**
-     * Panel diin mapili ang passenger category (Student, Senior, etc.).
-     * (Panel where passenger category is selected.)
-     */
     private JPanel createDiscountPanel() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setOpaque(false);
@@ -181,11 +174,13 @@ public class DiscountPaymentUI extends JFrame {
         txtIDNumber.setForeground(Color.GRAY);
         txtIDNumber.setPreferredSize(new Dimension(0, 40));
         
-        applyIdLimitFilter(txtIDNumber, 15); // Limitahan ang ID length para dili sobraan.
+        applyIdLimitFilter(txtIDNumber, 15); 
 
         lblErrorMsg = new JLabel(" "); 
         lblErrorMsg.setForeground(ERROR_RED);
 
+        // [OOP CONCEPT: INTERFACE/INNER CLASS] - Naggamit og FocusAdapter aron 
+        // mo-override sa specific focus events.
         txtIDNumber.addFocusListener(new FocusAdapter() {
             public void focusGained(FocusEvent e) {
                 if (txtIDNumber.getText().equals("Enter ID number")) {
@@ -227,11 +222,11 @@ public class DiscountPaymentUI extends JFrame {
         return p;
     }
 
-    /**
-     * Tighunong sa user kung sobra na ang characters sa ID.
-     * (Stops user if ID characters exceed the limit.)
-     */
     private void applyIdLimitFilter(JTextField field, int limit) {
+        
+        // [POLYMORPHISM (Method Overriding)] - Gi-override ang 'replace' 
+        // method aron limitahan ang gidaghanon sa characters.
+        
         ((AbstractDocument) field.getDocument()).setDocumentFilter(new DocumentFilter() {
             @Override
             public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) 
@@ -240,15 +235,15 @@ public class DiscountPaymentUI extends JFrame {
                 if ((currentLength + text.length() - length) <= limit) {
                     super.replace(fb, offset, length, text, attrs);
                 } else {
-                    Toolkit.getDefaultToolkit().beep(); // Motingog kung lapas na sa limit.
+                    Toolkit.getDefaultToolkit().beep(); 
                 }
             }
         });
     }
 
     /**
-     * Gi-compute ang 20% discount kung dili 'Regular' ang pasahero.
-     * (Computes 20% discount if passenger is not 'Regular'.)
+     * [ ABSTRACTION] - Gi-hide niini ang math logic. 
+     * Ang ubang components motawag lang ani aron ma-refresh ang total.
      */
     private void updateCalculations() {
         String type = (String) cbPassengerType.getSelectedItem();
@@ -271,10 +266,6 @@ public class DiscountPaymentUI extends JFrame {
         checkPurchaseEligibility();
     }
 
-    /**
-     * Logic para sa pagdawat og cash ug pag-compute sa sukli.
-     * (Logic for receiving cash and computing change.)
-     */
     private void handleCashPayment() {
         double total = ticket.getFinalFare();
         double MAX_REALISTIC_CASH = 10000.00;
@@ -287,31 +278,23 @@ public class DiscountPaymentUI extends JFrame {
             try {
                 double received = Double.parseDouble(input);
                 if (received < total) {
-                    showPaymentError("Kulang imong gibayad! Kinahanglan ka og ₱" + String.format("%.2f", total));
+                    showPaymentError("Kulang imong gibayad!");
                 } else if (received > MAX_REALISTIC_CASH) {
-                    showPaymentError("SOBRA RA KAAYO: Ang bayad lapas sa ₱10,000.\nPalihog gamit og mas gamay nga bill.");
+                    showPaymentError("SOBRA RA KAAYO.");
                 } else {
                     double change = received - total;
-                    JOptionPane.showMessageDialog(this, 
-                        "Dawat na ang bayad: ₱" + String.format("%.2f", received) + 
-                        "\nSukli: ₱" + String.format("%.2f", change), 
-                        "Payment Successful", JOptionPane.INFORMATION_MESSAGE);
-                    
+                    JOptionPane.showMessageDialog(this, "Sukli: ₱" + String.format("%.2f", change));
                     ticket.setPaymentMethod("Cash");
                     checkPurchaseEligibility();
                 }
             } catch (NumberFormatException e) {
-                showPaymentError("Dili valid nga numero. Palihog usba.");
+                showPaymentError("Dili valid nga numero.");
             }
         } else {
             resetPaymentSelection();
         }
     }
 
-    /**
-     * Pag-verify sa GCash 13-digit reference number.
-     * (Verifying GCash 13-digit reference number.)
-     */
     private void handleGCashPayment() {
         double total = ticket.getFinalFare();
         JPanel panel = new JPanel(new GridLayout(3, 1, 5, 5));
@@ -325,12 +308,12 @@ public class DiscountPaymentUI extends JFrame {
 
         if (result == JOptionPane.OK_OPTION) {
             String refNo = refField.getText().trim();
-            if (refNo.matches("\\d{13}")) { // Kinahanglan gyud og 13 ka digits.
-                JOptionPane.showMessageDialog(this, "Reference Number Verified!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            if (refNo.matches("\\d{13}")) { 
+                JOptionPane.showMessageDialog(this, "Reference Number Verified!");
                 ticket.setPaymentMethod("GCash (Ref: " + refNo + ")");
                 checkPurchaseEligibility();
             } else {
-                showPaymentError("Dili valid ang Reference Number! (Kinahanglan 13 digits)");
+                showPaymentError("Invalid Reference Number!");
             }
         } else {
             resetPaymentSelection();
@@ -347,10 +330,6 @@ public class DiscountPaymentUI extends JFrame {
         else if (method.equals("GCash")) handleGCashPayment();
     }
 
-    /**
-     * Tig-check kung kompleto na ba ang requirements para makapalit og ticket.
-     * (Checks if all requirements are met to purchase a ticket.)
-     */
     private void checkPurchaseEligibility() {
         String type = (String) cbPassengerType.getSelectedItem();
         String idText = txtIDNumber.getText().trim();
@@ -425,13 +404,14 @@ public class DiscountPaymentUI extends JFrame {
         checkPurchaseEligibility();
     }
 
-    // --- STYLING METHODS ---
+    // --- STYLING METHODS (ENCAPSULATED LOGIC) ---
     private void styleMainButton(JButton btn, Color base) {
         btn.setPreferredSize(new Dimension(0, 60));
         btn.setBackground(base);
         btn.setForeground(Color.GRAY);
         btn.setFont(new Font("SansSerif", Font.BOLD, 14));
         btn.setBorderPainted(false);
+        // [OOP CONCEPT: POLYMORPHISM] - Anonymous inner class for hover effects.
         btn.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) { if(btn.isEnabled()) btn.setBackground(HOVER_BLUE); }
             public void mouseExited(MouseEvent e) { if(btn.isEnabled()) btn.setBackground(ACCENT_BLUE); }

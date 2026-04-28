@@ -13,18 +13,16 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- * [LOGIC OVERVIEW]
- * 1. DATA PASSING: Gidawat ang Ticket object gikan sa previous screen para mapadayon ang booking.
- * 2. LIVE FILTERING: Gigamit ang DocumentFilters para i-block ang invalid characters samtang nag-type pa ang user.
- * 3. VALIDATION: Gi-check ang consistency sa data (e.g., PH mobile number format) sa dili pa mo-proceed.
- * 4. UX DESIGN: Modern dark theme nga naay real-time hover effects sa buttons.
+ * PassengerInfoUI Class
+ * [INHERITANCE]: Extends JFrame - Nakakuha kini og window properties gikan sa JFrame.
  */
 public class PassengerInfoUI extends JFrame {
-    // Member variables para sa global access sa data ug DAO.
+    
+    // [ENCAPSULATION]: Private fields - Giprotektahan ang data para sulod ra sa class ma-access.
+    // [COMPOSITION]: "Has-A" relationship - Ang UI naggamit og Ticket ug VesselDAO.
     private Ticket ticket;
     private VesselDAO dao; 
     
-    // UI Branding Colors (Constants para dali ra i-maintain/usbon).
     private final Color ACCENT_BLUE = new Color(0, 120, 215);
     private final Color HOVER_BLUE = new Color(50, 150, 255);
     private final Color DARK_BG = new Color(28, 30, 35);
@@ -32,20 +30,19 @@ public class PassengerInfoUI extends JFrame {
     private final Color STATUS_GREEN = new Color(46, 204, 113);
     private final String SYSTEM_TITLE = "AUTOMATED FERRY TICKETING SYSTEM";
 
-    // Paggahin og memory para sa input components.
     private JTextField txtFullName, txtContact, txtAddress; 
     private JSpinner spnrAge;
     private JButton btnBack, btnValidate;
     private JLabel lblStatus;
 
     /**
-     * Constructor: Diri i-setup ang tibuok "dagway" sa window.
+     * Constructor
+     * [DATA PASSING]: Gidawat ang DAO ug Ticket gikan sa IdentifyFerryUI.
      */
     public PassengerInfoUI(VesselDAO dao, Ticket ticket) {
         this.dao = dao; 
         this.ticket = ticket;
         
-        // Window Properties: Setting size, centering, ug background color.
         setTitle(SYSTEM_TITLE);
         setMinimumSize(new Dimension(1000, 850));
         setSize(1000, 850);
@@ -54,16 +51,12 @@ public class PassengerInfoUI extends JFrame {
         getContentPane().setBackground(DARK_BG);
         setLayout(new BorderLayout());
 
-        // --- HEADER SECTION ---
-        // Top label para sa main title sa screen.
         JLabel lblHeader = new JLabel("TRIP & PASSENGER INFORMATION", SwingConstants.CENTER);
         lblHeader.setForeground(Color.WHITE);
         lblHeader.setFont(new Font("SansSerif", Font.BOLD, 24));
         lblHeader.setBorder(BorderFactory.createEmptyBorder(30, 0, 30, 0));
         add(lblHeader, BorderLayout.NORTH);
 
-        // --- CENTER SECTION (CONTENT) ---
-        // JPanel nga naay GridBagLayout para flexible ang pag-arrange sa cards.
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
@@ -71,37 +64,29 @@ public class PassengerInfoUI extends JFrame {
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weighty = 1.0;
 
-        // Left Side: Passenger Details input form.
         gbc.gridx = 0; gbc.weightx = 0.5;
         centerPanel.add(createPassengerPanel(), gbc);
 
-        // Right Side: Summary of the selected trip (Receipt-style view).
         gbc.gridx = 1; gbc.weightx = 0.5;
         centerPanel.add(createTripSummaryPanel(), gbc);
 
         add(centerPanel, BorderLayout.CENTER);
-        add(createModernFooter(), BorderLayout.SOUTH); // Bottom controls.
+        add(createModernFooter(), BorderLayout.SOUTH);
 
-        setupActions(); // Register logic listeners for interactive elements.
+        setupActions(); 
     }
 
-    /**
-     * SETUP ACTIONS: Mao ni ang "logic engine" sa window.
-     */
     private void setupActions() {
-        // Event listener para sa Validate Button.
         btnValidate.addActionListener(e -> {
-            // Get text, then remove extra spaces (trim).
             String name = txtFullName.getText().trim();
             String contact = txtContact.getText().trim();
             String address = txtAddress.getText().trim(); 
             int age = (int) spnrAge.getValue();
 
-            // Regex Patterns para sa strict validation checks.
             String namePattern = "^[A-Za-z][A-Za-z\\s.]{1,49}$";
-            boolean isGibberish = name.matches(".*(.)\\1\\1\\1.*"); // Checks for spam characters like "aaaa".
+            boolean isGibberish = name.matches(".*(.)\\1\\1\\1.*"); 
 
-            // Logic Tree for Validation:
+            // Logic Tree para sa validation sa inputs sa user.
             if (name.isEmpty() || contact.isEmpty() || address.isEmpty()) {
                 showError("ERROR: Please fill up tanan fields!");
             } 
@@ -109,38 +94,31 @@ public class PassengerInfoUI extends JFrame {
                 showError("INVALID NAME: Palihog butangi og tarong nga name.");
             }
             else if (age < 12) {
-                // Safety Rule: Passengers below 12 need a guardian.
                 JOptionPane.showMessageDialog(this, 
                     "UNACCOMPANIED MINOR\nNeed og guardian kung below 12 years old.", 
                     "Notice", JOptionPane.WARNING_MESSAGE);
             }
             else if (!contact.matches("^09\\d{9}$")) {
-                // Logic: Must start with 09 and follow PH mobile format.
                 showError("INVALID CONTACT: Dapat magsugod sa '09' ug 11 digits tanan.");
             } 
             else {
-                // SUCCESS: Save results to the Ticket object.
+                // [STATE MANAGEMENT]: Pag-update sa Ticket object base sa inputs.
                 ticket.setPassengerName(name);
                 ticket.setAge(age);
                 ticket.setContactNumber(contact);
                 ticket.setAddress(address); 
                 
-                // Logic: Pass the object to the next UI (Payment screen).
                 new DiscountPaymentUI(this.dao, ticket).setVisible(true);
-                this.dispose(); // Close current UI to save RAM.
+                this.dispose(); 
             }
         });
 
-        // Go back to ferry selection.
         btnBack.addActionListener(e -> {
             new IdentifyFerryUI(this.dao).setVisible(true); 
             this.dispose(); 
         });
     }
 
-    /**
-     * PANEL BUILDER: Setup sa UI layout para sa passenger info inputs.
-     */
     private JPanel createPassengerPanel() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBackground(CARD_BG);
@@ -154,7 +132,6 @@ public class PassengerInfoUI extends JFrame {
         g.weightx = 1.0;
         g.gridx = 0;
 
-        // Field initialization and styling.
         txtFullName = new JTextField();
         txtContact = new JTextField();
         txtAddress = new JTextField(); 
@@ -164,13 +141,12 @@ public class PassengerInfoUI extends JFrame {
         styleInput(txtContact);
         styleInput(txtAddress); 
         
-        // [LIVE FILTERS]: I-restrict ang typing behavior sa user.
+        // Pag-apply sa mga filters para sa secure input handling.
         applyStrictNameFilter(txtFullName);
         applyContactNumberFilter(txtContact);
         applyLengthLimit(txtFullName, 50); 
         applyLengthLimit(txtAddress, 100); 
         
-        // Add components to the grid in sequence.
         g.gridy = 0; p.add(createLabel("FULL NAME"), g);
         g.gridy = 1; p.add(txtFullName, g);
         g.gridy = 2; p.add(createLabel("AGE"), g);
@@ -184,13 +160,14 @@ public class PassengerInfoUI extends JFrame {
     }
 
     /**
-     * FILTER LOGIC: Restricts input sa Name field para letters ug dots ra.
+     * [ABSTRACTION]: DocumentFilter - Gitago ang complexity sa key event handling.
+     * [POLYMORPHISM]: Overriding - Gi-usab ang replace method para sa custom filtering logic.
      */
     private void applyStrictNameFilter(JTextField field) {
         ((AbstractDocument) field.getDocument()).setDocumentFilter(new DocumentFilter() {
             @Override
             public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
-                // If it matches letters/spaces, insert it; otherwise, trigger an alert beep.
+                // Logic: Letters, spaces, ug dots ra ang i-allow.
                 if (text.matches("[A-Za-z\\s.]*")) {
                     super.replace(fb, offset, length, text, attrs);
                 } else {
@@ -200,9 +177,6 @@ public class PassengerInfoUI extends JFrame {
         });
     }
 
-    /**
-     * FILTER LOGIC: Strict length check para dili ma-error sa SQL database limits.
-     */
     private void applyLengthLimit(JTextField field, int limit) {
         ((AbstractDocument) field.getDocument()).setDocumentFilter(new DocumentFilter() {
             @Override
@@ -217,16 +191,13 @@ public class PassengerInfoUI extends JFrame {
         });
     }
 
-    /**
-     * FILTER LOGIC: Digits-only check para sa contact number inputs.
-     */
     private void applyContactNumberFilter(JTextField textField) {
         ((AbstractDocument) textField.getDocument()).setDocumentFilter(new DocumentFilter() {
             @Override
             public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
                 String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
                 String nextText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
-                // Allow only numbers and max 11 digits.
+                // Logic: Numbers ra gyud dapat ug 11 digits max.
                 if (nextText.matches("\\d*") && nextText.length() <= 11) {
                     super.replace(fb, offset, length, text, attrs);
                 }
@@ -234,14 +205,10 @@ public class PassengerInfoUI extends JFrame {
         });
     }
 
-    // Common helper method para sa error dialogs.
     private void showError(String msg) {
         JOptionPane.showMessageDialog(this, msg, "System Check", JOptionPane.ERROR_MESSAGE);
     }
 
-    /**
-     * UI BUILDER: Display summary card containing data from the previous selection.
-     */
     private JPanel createTripSummaryPanel() {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
@@ -249,13 +216,12 @@ public class PassengerInfoUI extends JFrame {
             " Trip Catalogue ", TitledBorder.LEFT, TitledBorder.TOP, 
             new Font("SansSerif", Font.BOLD, 14), Color.WHITE));
 
-        // Create a white contrast card.
         JPanel card = new JPanel();
         card.setBackground(Color.WHITE);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
 
-        // Logic: Get data directly from the 'ticket' object which holds the current session details.
+        // [OBJECT INTERACTION]: Pagkuha og data gikan sa ticket object nga gikan sa IdentifyFerryUI.
         card.add(createSummaryLabel("SELECTED ROUTE", ticket.getRoute(), Color.GRAY));
         card.add(Box.createRigidArea(new Dimension(0, 20)));
         card.add(createSummaryLabel("DEPARTURE TIME", ticket.getDepartureTime(), Color.GRAY));
@@ -265,7 +231,6 @@ public class PassengerInfoUI extends JFrame {
         card.add(createSummaryLabel("VESSEL", ticket.getVesselName(), Color.GRAY));
         card.add(Box.createRigidArea(new Dimension(0, 30)));
         
-        // Large price text para dali ra makit-an sa user.
         JLabel lblPrice = new JLabel("₱" + String.format("%.2f", ticket.getBaseFare()), SwingConstants.RIGHT);
         lblPrice.setFont(new Font("SansSerif", Font.BOLD, 32));
         lblPrice.setForeground(new Color(39, 174, 96));
@@ -275,9 +240,6 @@ public class PassengerInfoUI extends JFrame {
         return p;
     }
 
-    /**
-     * FOOTER BUILDER: Handles navigation buttons and system status display.
-     */
     private JPanel createModernFooter() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setOpaque(false);
@@ -289,7 +251,6 @@ public class PassengerInfoUI extends JFrame {
         lblStatus.setForeground(STATUS_GREEN);
         lblStatus.setFont(new Font("Monospaced", Font.BOLD, 13));
 
-        // Method calls para sa visual styling.
         styleButton(btnBack, new Color(60, 63, 65));
         styleButton(btnValidate, ACCENT_BLUE);
 
@@ -303,7 +264,7 @@ public class PassengerInfoUI extends JFrame {
     }
 
     /**
-     * UTILITY: Standardized styling para sa buttons (Hand cursor + Hover logic).
+     * [POLYMORPHISM]: Overriding methods sulod sa MouseAdapter aron mausab ang button hover effects.
      */
     private void styleButton(JButton btn, Color bg) {
         btn.setPreferredSize(new Dimension(250, 55));
@@ -314,14 +275,13 @@ public class PassengerInfoUI extends JFrame {
         btn.setBorder(BorderFactory.createEmptyBorder());
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseEntered(MouseEvent e) { btn.setBackground(HOVER_BLUE); }
+            @Override
             public void mouseExited(MouseEvent e) { btn.setBackground(bg); }
         });
     }
 
-    /**
-     * UTILITY: Standardized styling para sa input fields.
-     */
     private void styleInput(JTextField f) {
         f.setPreferredSize(new Dimension(0, 45));
         f.setBackground(new Color(60, 63, 65));
@@ -334,9 +294,6 @@ public class PassengerInfoUI extends JFrame {
         ));
     }
 
-    /**
-     * UI HELPER: Shortcut para sa gray text labels.
-     */
     private JLabel createLabel(String text) {
         JLabel l = new JLabel(text);
         l.setForeground(new Color(180, 180, 180));
@@ -344,9 +301,6 @@ public class PassengerInfoUI extends JFrame {
         return l;
     }
 
-    /**
-     * UI HELPER: Shortcut para sa formatted labels sa Summary Card.
-     */
     private JPanel createSummaryLabel(String title, String val, Color tCol) {
         JPanel p = new JPanel(new GridLayout(2, 1));
         p.setOpaque(false);

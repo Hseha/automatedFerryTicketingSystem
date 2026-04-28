@@ -15,8 +15,14 @@ import java.util.Map;
 /**
  * CORE LOGIC: Central hub sa Admin.
  * Handles navigation using CardLayout (Manage, Vessel, Sales views).
+ * * [INHERITANCE] - Ang 'FerryAdminDashboard' nag-EXTEND sa 'JFrame'.
+ * Nag-inherit kini sa tanang properties ug methods sa JFrame aron mahimong usa ka window.
  */
 public class FerryAdminDashboard extends JFrame {
+    
+    // [ENCAPSULATION] - Ang paggamit sa 'private' modifiers aron protektahan 
+    // ang mga internal states (tables, models, labels) gikan sa direct access sa gawas.
+    
     private final VesselDAO vesselDao;
     private JTable tripTable;
     private DefaultTableModel tableModel, statusTableModel, salesTableModel;
@@ -121,6 +127,9 @@ public class FerryAdminDashboard extends JFrame {
         actionPanel.add(btnDelete); actionPanel.add(btnArchive);
 
         String[] cols = {"ID", "Vessel Name", "Route", "Vessel Type", "Status", "ETD", "ETA", "Pier", "Price", "Capacity", "Remaining", "Trip Status"};
+        
+        // [OOP CONCEPT: POLYMORPHISM (Method Overriding)] - Gi-override ang 'isCellEditable' 
+        // method sa DefaultTableModel aron ma-customize kung unsa nga columns ang dili ma-edit.
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return c != 0 && c != 4 && c != 10 && c != 11; }
         };
@@ -167,9 +176,13 @@ public class FerryAdminDashboard extends JFrame {
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout(15, 15));
 
+        
         Map<String, Double> revenueMap = vesselDao.getRevenuePerTrip();
         double maxRev = revenueMap.values().stream().max(Double::compare).orElse(1.0);
 
+        // [POLYMORPHISM] - Overriding 'paintComponent' sa JPanel aron 
+        // makahimo og custom-drawn bar charts.
+        
         JPanel chartArea = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -192,8 +205,9 @@ public class FerryAdminDashboard extends JFrame {
 
     /**
      * SWING WORKER (SALES DATA):
+     * [INTERFACE/ABSTRACTION] - Ang SwingWorker nag-abstract sa background execution.
      * doInBackground: Runs SQL queries (Non-blocking).
-     * done: Updates UI components like salesTableModel in the EDT.
+     * done: Updates UI components like salesTableModel in the Event Dispatch Thread (EDT).
      */
     private void refreshSalesData() {
         new SwingWorker<Void, Void>() {
@@ -217,7 +231,6 @@ public class FerryAdminDashboard extends JFrame {
     /**
      * SWING WORKER (TRIP DATA):
      * Logic: Fetches trip list from DB in background to keep GUI responsive.
-     * Updates tripTable and statusTableModel after task completion.
      */
     public void refreshTripData() {
         new SwingWorker<List<Trip>, Void>() {
@@ -257,6 +270,7 @@ public class FerryAdminDashboard extends JFrame {
 
     // Mapper Logic: Reads specific table cells and creates a Trip Object
     private Trip mapRowToTrip(int row) {
+        // [OOP CONCEPT: OBJECT INSTANTIATION] - Pag-create og 'Trip' model object para ma-pass sa DAO.
         Trip t = new Trip();
         t.setVesselName(getVal(row, 1, "Unknown"));
         t.setRoute(getVal(row, 2, "Undefined"));
@@ -277,6 +291,9 @@ public class FerryAdminDashboard extends JFrame {
         panel.setBackground(new Color(210, 215, 225));
         statusTableModel = new DefaultTableModel(new String[]{"ID", "Vessel", "Condition", "Trip Status", "Control"}, 0) { @Override public boolean isCellEditable(int r, int c) { return false; } };
         JTable st = new JTable(statusTableModel);
+        
+        // [INTERFACE (MouseListener)] - Naggamit og anonymous class (MouseAdapter) 
+        // aron mo-handle sa user clicks sa table cells.
         st.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (st.getSelectedColumn() == 4) openStatusUpdateDialog(st.getSelectedRow());
@@ -295,6 +312,10 @@ public class FerryAdminDashboard extends JFrame {
         Object[] msg = { "Vessel Condition:", vC, "Trip Operational Status:", tS };
         if (JOptionPane.showConfirmDialog(this, msg, "System Control", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             String threat = (vC.getSelectedItem().equals("Grounded")) ? "High" : "Low";
+            
+            // [ABSTRACTION] - Ang Controller motawag lang sa DAO executeAdminAction(). 
+            // Wala kahibalo ang View kung giunsa ang SQL pag-update sa daghang tables.
+            
             if (vesselDao.executeAdminAction(vId, -1, (String)tS.getSelectedItem(), threat, "Admin Update", threat.equals("High"))) {
                 refreshTripData();
             }
